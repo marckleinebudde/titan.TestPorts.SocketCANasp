@@ -254,7 +254,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 								parameters.frame().canfd__frame();
 						log(
 								"Received a CAN FD frame from interface %s of %d bytes and with payload length %d",
-								ifr.ifr_name, nbytes, len);
+								ifr.ifr_name, nbytes, (int)len);
 						frameref.can__id() = can_id;
 #ifdef CANFD_FRAME_STRUCT_DEFINED
 						frameref.can__flags() = BITSTRING(
