@@ -12,6 +12,7 @@
 //  File:               SocketCAN_PortType.ttcn
 //  Description:        SocketCAN testport port definition file
 //
+// Revision R1A
 
 module SocketCAN_PortType
 {

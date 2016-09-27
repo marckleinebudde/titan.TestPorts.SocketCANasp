@@ -9,6 +9,8 @@
  * Michael Josenhans
  ******************************************************************************/
 
+//Revision R1A
+
 module CanError
 {
 const integer      CAN_ERR_DLC          :=         8 // dlc for error message frames 

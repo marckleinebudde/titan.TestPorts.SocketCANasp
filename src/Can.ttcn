@@ -9,6 +9,8 @@
  * Michael Josenhans
  ******************************************************************************/
 
+//Revision R1A
+
 module Can
 {
 import from General_Types all;

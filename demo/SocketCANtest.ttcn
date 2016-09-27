@@ -11,6 +11,8 @@
 //  File:               SocketCANtest.ttcn
 //  Description:        SocketCAN port type test
 //
+// Revision R1A
+
 module SocketCANtest {
 
 import from SocketCAN_Types all;
