@@ -1,0 +1,87 @@
+/******************************************************************************
+ * Copyright (c) 2010, 2016  Ericsson AB
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ * Michael Josenhans
+ ******************************************************************************/
+
+module Can
+{
+import from General_Types all;
+
+// special address description flags for the CAN_ID
+
+// should become an enum, definedable as hex
+const octetstring CAN_EFF_FLAG := '80000000'O; // EFF/SFF is set in the MSB
+const octetstring CAN_RTR_FLAG := '40000000'O; // remote transmission request
+const octetstring CAN_ERR_FLAG := '20000000'O; // error message frame
+
+// valid bits in CAN ID for frame formats
+const octetstring CAN_SFF_MASK := '000007FF'O // standard frame format (SFF)
+const octetstring CAN_EFF_MASK := '1FFFFFFF'O // extended frame format (EFF)
+const octetstring CAN_ERR_MASK := '1FFFFFFF'O // omit EFF, RTR, ERR flags
+
+type enumerated AdresseFamily_enum
+{
+// Supported address families
+PF_CAN		(29) // Controller Area Network
+}
+// Supported address families
+
+const integer AF_CAN :=  29; // See /include/linux/socket.h
+
+type enumerated ProtocolFamily_enum {
+//SOCK_STREAM       (1),
+SOCK_DGRAM          (2),
+SOCK_RAW            (3)
+//SOCK_RDM          (4),
+//SOCK_SEQPACKET    (5),
+//SOCK_DCCP         (6),
+//SOCK_PACKET       (10)
+}
+
+// particular protocols of the protocol family PF_CAN
+type enumerated PF_CAN_protocols_enum {
+CAN_RAW		    (1), // RAW sockets
+CAN_BCM		    (2), // Broadcast Manager
+CAN_TP16	    (3), // VAG Transport Protocol v1.6
+CAN_TP20	    (4), // VAG Transport Protocol v2.0
+CAN_MCNET	    (5), // Bosch MCNet
+CAN_ISOTP	    (6), // ISO 15765-2 Transport Protocol
+CAN_NPROTO	    (7)
+}
+
+// CAN payload length and DLC definitions according to ISO 11898-1
+// See /usr/include/linux/can.h
+const integer       CAN_MAX_DLEN   :=   8;
+
+// CAN FD payload length and DLC definitions according to ISO 11898-7
+// See /usr/include/linux/can.h
+const integer       CANFD_MAX_DLEN :=  64;
+
+//workaround: octetstring has been replaced by hexstring of twice that length
+// should be octetstring length (4);
+type LIN4_BO_LAST        CAN_id;      
+//type octetstring       CAN_id length (4);      
+type bitstring           CAN_flags length (8);                  // only used with CAN FD
+// should be octetstring and PDU size should be half as large
+// type hexstring        CAN_PDU;
+type octetstring         CAN_PDU;
+
+type record CAN_frame {
+  CAN_id              can_id,                                // 32 bit CAN_ID + EFF/RTR/
+//  workaround, CAN_PDU should be octetstring of lenth (0 .. CAN_MAX_DLEN)
+  CAN_PDU             can_pdu length (0 .. CAN_MAX_DLEN)
+}
+
+type record CANFD_frame {
+  CAN_id              can_id,                                // 32 bit CAN_ID + EFF/RTR/
+  CAN_flags           can_flags,                             // only used with CAN FD  
+  //  workaround, CAN_PDU should be octetstring of length (0 .. CANFD_MAX_DLEN)
+  CAN_PDU             can_pdu   length (0 .. CANFD_MAX_DLEN)
+}
+}

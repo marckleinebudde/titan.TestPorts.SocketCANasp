@@ -1,0 +1,47 @@
+/******************************************************************************
+ * Copyright (c) 2010, 2016  Ericsson AB
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ * Michael Josenhans
+ ******************************************************************************/
+
+module Raw
+{
+  import from Can all;
+
+// record can_filter - CAN ID based filter in can_register().
+// can_id:   relevant bits of CAN ID which are not masked out.
+// can_mask: CAN mask (see description)
+//
+// Description:
+// A filter matches, when
+//
+//          <received_can_id> & mask == can_id & mask
+//
+// The filter can be inverted (CAN_INV_FILTER bit set in can_id) or it can
+// filter for error message frames (CAN_ERR_FLAG bit set in mask).
+
+type record CAN_RAW_filter {
+	CAN_id can_id,
+	CAN_id can_mask
+};
+
+const octetstring CAN_INV_FILTER  :=  '20000000'O; /* to be set in can_filter.can_id */
+
+type bitstring  CAN_RAW_err_mask length (32);
+
+type enumerated DisableEnable_enum {
+  Disable      (0),
+  Enable       (1)
+}
+
+type DisableEnable_enum      CAN_RAW_loopback_enum;
+type DisableEnable_enum      CAN_RAW_recv_own_msgs_enum;
+type DisableEnable_enum      CAN_RAW_fd_frames_enum;
+type DisableEnable_enum      CAN_RAW_join_filters_enum;
+
+}

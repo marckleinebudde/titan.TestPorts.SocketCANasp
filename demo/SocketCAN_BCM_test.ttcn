@@ -1,0 +1,241 @@
+/* Copyright (c) 2010, 2016  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+* Michael Josenhans
+******************************************************************************/
+//
+//  File:               SocketCAN_BCM_test.ttcn
+//  Description:        SocketCAN testcases for CAN_BCM frames
+//
+
+module SocketCAN_BCM_test {
+import from SocketCANtest all
+import from SocketCAN_Types all;
+import from Bcm all
+import from Can all
+
+template SocketCAN_CAN_or_CAN_FD_frame a_CAN_frame (template CAN_frame p_can_frame) := {can_frame := p_can_frame}
+
+testcase tc_can_bcm_TX_SETUP_TX_DELETE() runs on MTC {
+  // here are 5 CAN frames cyclicly started with TX_SETUP (can_id = 66), but after receiving 
+  // a sequnce of 10 frames the cyclic sending of the frames is stopped with TX_DELETE (can id = 66). 
+
+  var PTC v_ptc_bcmConfigurator := PTC.create("PTC1_ptc_bcmConfigurator") alive
+  var PTC v_ptc_rawFrameReceiver1 := PTC.create("PTC2_ptc_rawFrameReceiver1") alive
+  var PTC v_ptc_rawFrameReceiver2 := PTC.create("PTC2_ptc_rawFrameReceiver2") alive
+
+  f_addSyncSlaveSet(v_ptc_bcmConfigurator, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawFrameReceiver1, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawFrameReceiver2, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_bcmConfigurator:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawFrameReceiver1:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawFrameReceiver2:pt_sync)
+
+  var CAN_frame  v_can_frame1, v_can_frame2, v_can_frame3, v_can_frame4, v_can_frame5;
+
+  var SocketCAN_bcm_frame v_bcm_activation_frame, v_bcm_deactivation_frame   
+
+  v_can_frame1 := {can_id := 1, can_pdu := '1111111111111111'O}; 
+  v_can_frame2 := {can_id := 2, can_pdu := '2222222222222222'O};  
+  v_can_frame3 := {can_id := 3, can_pdu := '3333333333333333'O}; 
+  v_can_frame4 := {can_id := 4, can_pdu := '4444444444444444'O}; 
+  v_can_frame5 := {can_id := 5, can_pdu := '5555555555555555'O}; 
+
+  template SocketCAN_CAN_or_CAN_FD_frames a_expected_can_frames := {
+        {can_frame := v_can_frame1},
+        {can_frame := v_can_frame2},
+        {can_frame := v_can_frame3},
+        {can_frame := v_can_frame4},
+        {can_frame := v_can_frame5},
+        {can_frame := v_can_frame1}, 
+        {can_frame := v_can_frame2},
+        {can_frame := v_can_frame3},
+        {can_frame := v_can_frame4},
+        {can_frame := v_can_frame5}
+  }
+
+  v_bcm_activation_frame := {
+    opcode := 1, // TX_SETUP
+    flags  := '00000000000000000000000000000011'B,  // refers to SETTIMER | STARTTIMER
+    count  := 0,
+    ival1  := {0, 0},
+    ival2  := {0, 100000},
+    can_id := 66, // should become octetstring in the future
+    frames := {can_frame := {
+        v_can_frame1, 
+        v_can_frame2,
+        v_can_frame3,
+        v_can_frame4,
+        v_can_frame5}}
+  }
+
+  v_bcm_deactivation_frame := {
+    opcode := 2, // TX_DELETE
+    flags  := '00000000000000000000000000000000'B,
+    count  := 0,
+    ival1  := {0, 0},
+    ival2  := {0, 0},
+    can_id := 66,
+    frames := {can_frame := {}}
+  }
+
+  var BCM_cmds v_cmds := 
+  {
+    {phase := e_testbody2, bcm_frame := v_bcm_activation_frame},
+    {phase := e_testbody5, bcm_frame := v_bcm_deactivation_frame}
+  }
+
+  v_ptc_bcmConfigurator.start(f_ptc_bcmComandSendInitiator(v_cmds))
+
+  var SocketCAN_CAN_or_CAN_FD_frame v_frame_to_receive1, v_frame_to_receive5
+  v_frame_to_receive1 := {can_frame := v_can_frame1}
+  v_frame_to_receive5 := {can_frame := v_can_frame5}
+
+  // stop when receiving v_frame_to_receive
+  v_ptc_rawFrameReceiver1.start(f_ptc_RawFrameReceiver(e_testbody3, v_frame_to_receive1))
+
+  // stop when receiving v_frame_to_receive
+  v_ptc_rawFrameReceiver2.start(f_ptc_RawFrameSequenceReceiver(e_testbody4, a_expected_can_frames, e_testbody5, 2.0))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete; v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+
+  all component.done;
+  log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_bcmConfigurator:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawFrameReceiver1:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawFrameReceiver2:pt_sync)
+
+  all component.kill;     
+}
+
+
+testcase tc_can_bcm_TX_SETUP_TX_DELETE_TX_READ__broken() runs on MTC {
+  // here are 5 CAN frames cyclicly started with TX_SETUP (can_id = 66), but after receiving 
+  // a sequnce of 10 frames the cyclic sending of the frames is stopped with TX_DELETE (can id = 66). 
+
+  var PTC v_ptc_bcmConfigurator := PTC.create("PTC1_ptc_bcmConfigurator") alive
+  var PTC v_ptc_rawFrameReceiver1 := PTC.create("PTC2_ptc_rawFrameReceiver1") alive
+  var PTC v_ptc_rawFrameReceiver2 := PTC.create("PTC2_ptc_rawFrameReceiver2") alive
+
+  f_addSyncSlaveSet(v_ptc_bcmConfigurator, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawFrameReceiver1, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawFrameReceiver2, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_bcmConfigurator:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawFrameReceiver1:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawFrameReceiver2:pt_sync)
+
+  var CAN_frame  v_can_frame1, v_can_frame2, v_can_frame3, v_can_frame4, v_can_frame5;
+
+  var SocketCAN_bcm_frame v_bcm_activation_frame, v_bcm_deactivation_frame, v_bcm_read_status_frame
+
+  v_can_frame1 := {can_id := 1, can_pdu := '1111111111111111'O}; 
+  v_can_frame2 := {can_id := 2, can_pdu := '2222222222222222'O};  
+  v_can_frame3 := {can_id := 3, can_pdu := '3333333333333333'O}; 
+  v_can_frame4 := {can_id := 4, can_pdu := '4444444444444444'O}; 
+  v_can_frame5 := {can_id := 5, can_pdu := '5555555555555555'O}; 
+
+  template SocketCAN_CAN_or_CAN_FD_frames a_expected_can_frames := {
+        {can_frame := v_can_frame1},
+        {can_frame := v_can_frame2},
+        {can_frame := v_can_frame3},
+        {can_frame := v_can_frame4},
+        {can_frame := v_can_frame5},
+        {can_frame := v_can_frame1}, 
+        {can_frame := v_can_frame2},
+        {can_frame := v_can_frame3},
+        {can_frame := v_can_frame4},
+        {can_frame := v_can_frame5}
+  }
+
+v_bcm_activation_frame := {
+    opcode := 1, // TX_SETUP
+    flags  := '00000000000000000000000000000011'B,  // refers to SETTIMER | STARTTIMER
+    count  := 0,
+    ival1  := {0, 0},
+    ival2  := {0, 100000},
+    can_id := 66, // should become octetstring in the future
+    frames := {can_frame := {
+        v_can_frame1, 
+        v_can_frame2,
+        v_can_frame3,
+        v_can_frame4,
+        v_can_frame5}}
+  }
+
+  v_bcm_deactivation_frame := {
+    opcode := 2, // TX_DELETE
+    flags  := '00000000000000000000000000000000'B,
+    count  := 0,
+    ival1  := {0, 0},
+    ival2  := {0, 0},
+    can_id := 66,
+    frames := {can_frame := {}}
+  }
+
+  v_bcm_read_status_frame := {
+    opcode := 3, // TX_READ
+    flags  := 
+    // workaround for titan constants instead of enums: 
+    ('00000000000000000000000000000001'B << 0) or4b // enum2int(e_CAN_BCM_SETTIMER_BITINDEX)) instead of 0
+    ('00000000000000000000000000000001'B << 1) or4b // enum2int(e_CAN_BCM_TX_COUNTEVT_BITINDEX)) instead of 1
+    ('00000000000000000000000000000001'B << 4),     // enum2int(e_CAN_BCM_TX_CP_CAN_ID_BITINDEX) instead of 4
+    count  := 0,
+    ival1  := {0, 0},
+    ival2  := {0, 0},
+    can_id := 66,
+    frames := {can_frame := {}}
+  }
+  
+  
+  var BCM_cmds v_cmds := 
+  {
+    //{phase := e_testbody2, bcm_frame := v_bcm_activation_frame},
+    {phase := e_testbody3, bcm_frame := v_bcm_read_status_frame},
+    {phase := e_testbody4, bcm_frame := v_bcm_deactivation_frame},
+    {phase := e_testbody6, bcm_frame := v_bcm_read_status_frame}
+  }
+
+  v_ptc_bcmConfigurator.start(f_ptc_bcmComandSendReceiveInitiator(v_cmds))
+
+  var SocketCAN_CAN_or_CAN_FD_frame v_frame_to_receive1, v_frame_to_receive5
+  v_frame_to_receive1 := {can_frame := v_can_frame1}
+  v_frame_to_receive5 := {can_frame := v_can_frame5}
+
+  // stop when receiving v_frame_to_receive
+  v_ptc_rawFrameReceiver1.start(f_ptc_RawFrameReceiver(e_testbody3, v_frame_to_receive1))
+
+  // stop when receiving v_frame_to_receive
+  v_ptc_rawFrameReceiver2.start(f_ptc_RawFrameSequenceReceiver(e_testbody5, a_expected_can_frames, e_testbody6, 2.0))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete; v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+
+  all component.done;
+  log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_bcmConfigurator:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawFrameReceiver1:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawFrameReceiver2:pt_sync)
+
+  all component.kill;     
+}
+
+}

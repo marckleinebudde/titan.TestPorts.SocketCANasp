@@ -1,0 +1,167 @@
+/******************************************************************************
+ * Copyright (c) 2010, 2016  Ericsson AB
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ * Michael Josenhans
+ ******************************************************************************/
+//
+//  File:               SocketCAN_Types.ttcn
+//  Description:        SocketCAN definition file
+//
+
+
+module SocketCAN_Types
+{    
+  import from Bcm all
+  import from Can all
+  import from Raw all
+  
+type integer             SocketCAN_socketid;
+type charstring          SocketCAN_if_name;
+type integer             SocketCAN_if_index (-32767 .. +32767); 
+
+type record SocketCAN_timeval
+{
+   integer tv_sec,		    // Seconds
+   integer tv_usec	        // Microseconds
+}
+
+type union SocketCAN_CAN_or_CAN_FD_frame {
+  CAN_frame                        can_frame,
+  CANFD_frame                      canfd_frame
+}
+
+type record SocketCAN_ifr {
+  SocketCAN_if_name                if_name optional, 
+  SocketCAN_if_index               if_index optional
+} 
+
+type enumerated SocketCAN_if_any { ANY_INTERFACE}
+
+type union SocketCAN_send_data_ifu {
+  SocketCAN_if_name                if_name, 
+  SocketCAN_if_index               if_index,
+  SocketCAN_if_any                 if_any
+} 
+
+type union SocketCAN_ioctl_ifu {
+  SocketCAN_if_name                if_name, 
+  SocketCAN_if_index               if_index,
+  SocketCAN_if_any                 if_any
+} 
+
+type enumerated SocketCAN_Result_code 
+{ 
+  SocketCAN_ERROR (0),
+  SocketCAN_SUCCESS(1)
+}
+
+type record SocketCAN_Result{
+  SocketCAN_Result_code            result_code,
+  integer                          err  (-32767 .. +32767) optional,
+  charstring                       err_text optional
+}
+
+type record SocketCAN_socket{
+  AdresseFamily_enum               domain,
+  ProtocolFamily_enum              ptype,
+  PF_CAN_protocols_enum            protocol
+}
+
+type record SocketCAN_socket_result{
+  SocketCAN_socketid               id,
+  SocketCAN_Result                 result
+}
+
+type record SocketCAN_ioctl{
+  SocketCAN_socketid               id,
+  SocketCAN_ioctl_ifu              ifu optional
+}
+
+type record SocketCAN_ioctl_result{
+  SocketCAN_ifr                    ifr,
+  SocketCAN_Result                 result
+}
+
+type record SocketCAN_connect{
+  SocketCAN_socketid               id,
+  SocketCAN_if_index               if_index
+}
+
+type record SocketCAN_connect_result{
+  SocketCAN_Result                 result
+}
+
+type record SocketCAN_bind{
+  SocketCAN_socketid               id,
+  SocketCAN_if_index               if_index
+}
+
+type record SocketCAN_bind_result{
+  SocketCAN_Result                 result
+}
+
+type record SocketCAN_send_data{
+  SocketCAN_socketid               id,
+  // if the following optional parameter is not provided, the CAN interface name is taken from
+  // the TTCN configuration file
+  SocketCAN_send_data_ifu          ifu optional,
+  SocketCAN_CAN_or_CAN_FD_frame    frame
+}
+
+type record SocketCAN_send_data_result{
+  SocketCAN_Result                 result
+}
+
+type record SocketCAN_write_data{
+  SocketCAN_socketid               id,
+  SocketCAN_bcm_frame              bcm_tx_msg
+}
+
+type record SocketCAN_write_data_result{
+  SocketCAN_Result                 result
+  //SocketCAN_bcm_frame              bcm_rx_msg
+}
+
+type record SocketCAN_receive_CAN_or_CAN_FD_frame{ // recieved CAN or CAN FD frame
+  SocketCAN_socketid               id,
+  SocketCAN_ifr                    ifr,
+  SocketCAN_CAN_or_CAN_FD_frame    frame, 
+  SocketCAN_timeval                timestamp
+}
+
+type record SocketCAN_receive_BCM_message { // recieved CAN BCM message
+  SocketCAN_socketid               id,
+  SocketCAN_ifr                    ifr,
+  SocketCAN_bcm_frame              frame
+}
+
+type record length (0 .. 255) of CAN_RAW_filter CAN_RAW_filters
+  
+type union SocketCAN_setsockopt_commandu {
+  CAN_RAW_filters                  rfilter,  
+  CAN_RAW_err_mask                 err_mask,
+  CAN_RAW_loopback_enum            loopback,
+  CAN_RAW_recv_own_msgs_enum       recv_own_msgs, 
+  CAN_RAW_fd_frames_enum           fd_frames,
+  CAN_RAW_join_filters_enum        join_filters
+}
+
+type record SocketCAN_setsockopt{
+  SocketCAN_socketid               id,
+  SocketCAN_setsockopt_commandu    command
+}
+
+type record SocketCAN_setsockopt_result{
+  SocketCAN_Result                 result
+}
+
+type record SocketCAN_close{
+  SocketCAN_socketid               id
+}
+
+}

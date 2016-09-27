@@ -1,0 +1,289 @@
+/* Copyright (c) 2010, 2016  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+* Michael Josenhans
+******************************************************************************/
+//
+//  File:               SocketCAN_RAW_test.ttcn
+//  Description:        SocketCAN testcases for CAN_RAW frames
+//
+
+module SocketCAN_RAW_test
+{
+import from SocketCANtest all
+import from SocketCAN_Types all;
+import from Can all
+import from Raw all
+import from CanError all
+
+testcase tc_can_raw_send_and_receive_frame() runs on MTC {
+  var PTC v_ptc_rawSendInitiator := PTC.create("PTC1_ptc_rawSendInitiator") alive
+  var PTC v_ptc_rawFrameReceiver := PTC.create("PTC2_ptc_rawFrameReceiver") alive
+
+  f_addSyncSlaveSet(v_ptc_rawSendInitiator, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawFrameReceiver, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_rawSendInitiator:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawFrameReceiver:pt_sync)
+
+  var SocketCAN_CAN_or_CAN_FD_frame v_frame_to_send
+  v_frame_to_send := {can_frame := 
+    {can_id := 21, 
+      can_pdu := '0123456789ABCDEF'O}
+  }
+
+  v_ptc_rawSendInitiator.start(f_ptc_RawSendInitiator(e_testbody1, v_frame_to_send))
+  v_ptc_rawFrameReceiver.start(f_ptc_RawFrameReceiver(e_testbody3, v_frame_to_send))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete;v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+  all component.done;
+  log("MTC done")
+  
+  disconnect(mtc:pt_sync, v_ptc_rawSendInitiator:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawFrameReceiver:pt_sync)
+  
+  all component.kill;      
+}
+
+testcase tc_can_raw_setsockopt_CAN_RAW_FILTER() runs on MTC {
+  
+  var PTC v_ptc_rawSetFilters := PTC.create("PTC1_ptc_rawSetFilters") alive
+  var PTC v_ptc_rawDeactivateFilters := PTC.create("PTC1_ptc_rawDeactivateFilters") alive
+
+  f_addSyncSlaveSet(v_ptc_rawSetFilters, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawDeactivateFilters, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_rawSetFilters:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawDeactivateFilters:pt_sync)
+
+  // activate filters
+  const CAN_RAW_filter c_rfilter0 := 
+  {can_id := 123, can_mask := bit2int(oct2bit(CAN_EFF_FLAG) or4b oct2bit(CAN_RTR_FLAG) or4b oct2bit(CAN_SFF_MASK))};
+  const CAN_RAW_filter c_rfilter1 := {can_id := oct2int('0200'O), can_mask := oct2int('0700'O)};
+  const CAN_RAW_filter c_rfilter2 := {can_id := bit2int(oct2bit('12345678'O) or4b oct2bit(CAN_EFF_FLAG)), 
+    can_mask := bit2int(oct2bit(CAN_EFF_FLAG) or4b oct2bit(CAN_RTR_FLAG) or4b oct2bit(CAN_EFF_MASK))};
+
+  const SocketCAN_setsockopt_commandu c_commandu_activate_filters := {rfilter:={c_rfilter0, c_rfilter1, c_rfilter2}}
+  const SocketCAN_setsockopt_commandu c_commandu_deactivate_filters := {rfilter:={}}
+
+  // activate filters command
+  v_ptc_rawSetFilters.start(f_raw_setsockopt(e_testbody1, c_commandu_activate_filters))
+
+  // deactivate filters command
+  v_ptc_rawDeactivateFilters.start(f_raw_setsockopt(e_testbody3, c_commandu_deactivate_filters))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete; v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+  all component.done;
+  log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_rawSetFilters:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawDeactivateFilters:pt_sync)
+  
+  all component.kill;    
+}
+
+testcase tc_can_raw_setsockopt_CAN_RAW_ERR_FILTER() runs on MTC {
+  
+  var PTC v_ptc_rawActivateErrorMask := PTC.create("PTC1_ptc_rawActivateErrorMask") alive
+  var PTC v_ptc_rawDeactivateErrorMask := PTC.create("PTC1_ptc_rawDeactivateErrorMask") alive
+
+  f_addSyncSlaveSet(v_ptc_rawActivateErrorMask, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawDeactivateErrorMask, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_rawActivateErrorMask:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawDeactivateErrorMask:pt_sync)
+
+  const SocketCAN_setsockopt_commandu c_commandu_activate_err_mask := {err_mask := oct2bit(CAN_ERR_TX_TIMEOUT) or4b oct2bit(CAN_ERR_BUSOFF)}
+  const SocketCAN_setsockopt_commandu c_commandu_deactivate_err_mask := {err_mask := oct2bit('00000000'O)}
+
+  // activate error mask command
+  v_ptc_rawActivateErrorMask.start(f_raw_setsockopt(e_testbody1, c_commandu_activate_err_mask))
+
+  // deactivate error mask command
+  v_ptc_rawDeactivateErrorMask.start(f_raw_setsockopt(e_testbody3, c_commandu_deactivate_err_mask))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete; v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+  all component.done;
+  log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_rawActivateErrorMask:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawDeactivateErrorMask:pt_sync)
+  
+  all component.kill;    
+}
+
+testcase tc_can_raw_setsockopt_CAN_RAW_LOOPBACK() runs on MTC {
+  
+  var PTC v_ptc_rawActivateLoopback := PTC.create("PTC1_ptc_rawActivateLoopback") alive
+  var PTC v_ptc_rawDeactivateLoopback := PTC.create("PTC1_ptc_rawDeactivateLoopback") alive
+
+  f_addSyncSlaveSet(v_ptc_rawActivateLoopback, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawDeactivateLoopback, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_rawActivateLoopback:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawDeactivateLoopback:pt_sync)
+
+  const SocketCAN_setsockopt_commandu c_commandu_activate_loopback := {loopback := Enable}
+  const SocketCAN_setsockopt_commandu c_commandu_deactivate_loopback := {loopback := Disable}
+
+  // activate error mask command
+  v_ptc_rawActivateLoopback.start(f_raw_setsockopt(e_testbody1, c_commandu_activate_loopback))
+
+  // deactivate error mask command
+  v_ptc_rawDeactivateLoopback.start(f_raw_setsockopt(e_testbody3, c_commandu_deactivate_loopback))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete; v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+  all component.done;
+  log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_rawActivateLoopback:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawDeactivateLoopback:pt_sync)
+
+  all component.kill;      
+}
+
+testcase tc_can_raw_setsockopt_CAN_RAW_RECV_OWN_MSGS() runs on MTC {
+  
+  var PTC v_ptc_rawActivateReceiveOwnMessages := PTC.create("PTC1_ptc_rawActivateReceiveOwnMessages") alive
+  var PTC v_ptc_rawDeactivateReceiveOwnMessages := PTC.create("PTC1_ptc_rawDeactivateReceiveOwnMessages") alive
+
+  f_addSyncSlaveSet(v_ptc_rawActivateReceiveOwnMessages, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawDeactivateReceiveOwnMessages, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_rawActivateReceiveOwnMessages:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawDeactivateReceiveOwnMessages:pt_sync)
+
+  const SocketCAN_setsockopt_commandu c_commandu_activate_ReceiveOwnMessages := {recv_own_msgs := Enable}
+  const SocketCAN_setsockopt_commandu c_commandu_deactivate_ReceiveOwnMessages := {recv_own_msgs := Disable}
+
+  // activate error mask command
+  v_ptc_rawActivateReceiveOwnMessages.start(f_raw_setsockopt(e_testbody1, c_commandu_activate_ReceiveOwnMessages))
+
+  // deactivate error mask command
+  v_ptc_rawDeactivateReceiveOwnMessages.start(f_raw_setsockopt(e_testbody3, c_commandu_deactivate_ReceiveOwnMessages))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete; v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+  all component.done;
+  log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_rawActivateReceiveOwnMessages:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawDeactivateReceiveOwnMessages:pt_sync)
+
+  all component.kill;      
+}
+
+testcase tc_can_raw_setsockopt_CAN_RAW_FD_FRAMES() runs on MTC {
+  
+  var PTC v_ptc_rawActivateFD_Frames := PTC.create("PTC1_ptc_rawActivateFD_Frames") alive
+  var PTC v_ptc_rawDeactivateFD_Frames := PTC.create("PTC1_ptc_rawDeactivateFD_Frames") alive
+
+  f_addSyncSlaveSet(v_ptc_rawActivateFD_Frames, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawDeactivateFD_Frames, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_rawActivateFD_Frames:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawDeactivateFD_Frames:pt_sync)
+
+  const SocketCAN_setsockopt_commandu c_commandu_activate_FD_Frames := {fd_frames := Enable}
+  const SocketCAN_setsockopt_commandu c_commandu_deactivate_FD_Frames := {fd_frames := Disable}
+
+  // activate error mask command
+  v_ptc_rawActivateFD_Frames.start(f_raw_setsockopt(e_testbody1, c_commandu_activate_FD_Frames))
+
+  // deactivate error mask command
+  v_ptc_rawDeactivateFD_Frames.start(f_raw_setsockopt(e_testbody3, c_commandu_deactivate_FD_Frames))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete; v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+  all component.done;
+  log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_rawActivateFD_Frames:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawDeactivateFD_Frames:pt_sync)
+
+  all component.kill;
+}
+
+testcase tc_can_raw_setsockopt_CAN_RAW_JOIN_FILTERS() runs on MTC {
+  
+  var PTC v_ptc_rawActivateJoinFilters := PTC.create("PTC1_ptc_rawActivateJoinFilters") alive
+  var PTC v_ptc_rawDeactivateJoinFilters := PTC.create("PTC1_ptc_rawDeactivateJoinFilters") alive
+
+  f_addSyncSlaveSet(v_ptc_rawActivateJoinFilters, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawDeactivateJoinFilters, v_PTCSet)
+  connect(mtc:pt_sync, v_ptc_rawActivateJoinFilters:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawDeactivateJoinFilters:pt_sync)
+
+  const SocketCAN_setsockopt_commandu c_commandu_activate_JoinFilters := {join_filters := Enable}
+  const SocketCAN_setsockopt_commandu c_commandu_deactivate_JoinFilters := {join_filters := Disable}
+
+  // activate error mask command
+  v_ptc_rawActivateJoinFilters.start(f_raw_setsockopt(e_testbody1, c_commandu_activate_JoinFilters))
+
+  // deactivate error mask command
+  v_ptc_rawDeactivateJoinFilters.start(f_raw_setsockopt(e_testbody3, c_commandu_deactivate_JoinFilters))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete; v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+  all component.done;
+  log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_rawActivateJoinFilters:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawDeactivateJoinFilters:pt_sync)
+
+  all component.kill;
+}
+
+
+
+//=========================================================================
+// Control
+//=========================================================================
+
+// Insert control part here if applicable!
+
+}  // end of module

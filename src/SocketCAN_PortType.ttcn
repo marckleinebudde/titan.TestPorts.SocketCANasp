@@ -1,0 +1,40 @@
+/******************************************************************************
+ * Copyright (c) 2010, 2016  Ericsson AB
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ * Michael Josenhans
+ ******************************************************************************/
+//
+//  File:               SocketCAN_PortType.ttcn
+//  Description:        SocketCAN testport port definition file
+//
+
+module SocketCAN_PortType
+{
+import from SocketCAN_Types all;
+
+type port SocketCAN_PT message
+  {
+    out   SocketCAN_socket;
+    in    SocketCAN_socket_result;
+    out   SocketCAN_ioctl;
+    in    SocketCAN_ioctl_result;
+    out   SocketCAN_connect;
+    in    SocketCAN_connect_result;
+    out   SocketCAN_bind;
+    in    SocketCAN_bind_result;    
+    out   SocketCAN_send_data;
+    in    SocketCAN_send_data_result;
+    out   SocketCAN_write_data;
+    in    SocketCAN_write_data_result;
+    in    SocketCAN_receive_CAN_or_CAN_FD_frame;
+    in    SocketCAN_receive_BCM_message;
+    out   SocketCAN_setsockopt; 
+    in    SocketCAN_setsockopt_result;
+    out   SocketCAN_close;
+  } with { extension "provider" }
+}

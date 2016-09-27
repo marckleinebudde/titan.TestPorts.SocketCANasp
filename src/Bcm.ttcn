@@ -1,0 +1,88 @@
+/******************************************************************************
+ * Copyright (c) 2010, 2016  Ericsson AB
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ * Michael Josenhans
+ ******************************************************************************/
+
+module Bcm
+{
+import from Can all;
+import from General_Types all; 
+
+const integer CAN_FRAME_MAX_NUMBER := 256;  
+
+type enumerated BcmFlagsBitIndex_enum {
+  e_CAN_BCM_SETTIMER_BITINDEX            (0),
+  e_CAN_BCM_STARTTIMER_BITINDEX          (1),
+  e_CAN_BCM_TX_COUNTEVT_BITINDEX         (2),
+  e_CAN_BCM_TX_ANNOUNCE_BITINDEX         (3),
+  e_CAN_BCM_TX_CP_CAN_ID_BITINDEX        (4),
+  e_CAN_BCM_RX_FILTER_ID_BITINDEX        (5),
+  e_CAN_BCM_RX_CHECK_DLC_BITINDEX        (6),
+  e_CAN_BCM_RX_NO_AUTOTIMER_BITINDEX     (7),
+  e_CAN_BCM_RX_ANNOUNCE_RESUME_BITINDEX  (8),
+  e_CAN_BCM_TX_RESET_MULTI_IDX_BITINDEX  (9),
+  e_CAN_BCM_RX_RTR_FRAME_BITINDEX        (10)
+}
+
+type enumerated BcmFlags_enum {
+  e_CAN_BCM_SETTIMER            (1),
+  e_CAN_BCM_STARTTIMER          (2),
+  e_CAN_BCM_TX_COUNTEVT         (4),
+  e_CAN_BCM_TX_ANNOUNCE         (8),
+  e_CAN_BCM_TX_CP_CAN_ID        (16),
+  e_CAN_BCM_RX_FILTER_ID        (32),
+  e_CAN_BCM_RX_CHECK_DLC        (64),
+  e_CAN_BCM_RX_NO_AUTOTIMER     (128),
+  e_CAN_BCM_RX_ANNOUNCE_RESUME  (256),
+  e_CAN_BCM_TX_RESET_MULTI_IDX  (512),
+  e_CAN_BCM_RX_RTR_FRAME        (1024)
+}
+
+type enumerated BcmOpcode_enum {
+  e_CAN_BCM_TX_SETUP    (1),	  // create (cyclic) transmission task
+  e_CAN_BCM_TX_DELETE   (2),	  // remove (cyclic) transmission task
+  e_CAN_BCM_TX_READ     (3),	  // read properties of (cyclic) transmission task
+  e_CAN_BCM_TX_SEND     (4),      // send one CAN frame
+  e_CAN_BCM_RX_SETUP    (5),      // create RX content filter subscription
+  e_CAN_BCM_RX_DELETE   (6),      // remove RX content filter subscription
+  e_CAN_BCM_RX_READ     (7),      // read properties of RX content filter subscription
+  e_CAN_BCM_TX_STATUS   (8),      // reply to TX_READ request
+  e_CAN_BCM_TX_EXPIRED  (9),      // notification on performed transmissions (count=0)
+  e_CAN_BCM_RX_STATUS   (10),     // reply to RX_READ request
+  e_CAN_BCM_RX_TIMEOUT  (11),     // cyclic message is absent
+  e_CAN_BCM_RX_CHANGED  (12)      // updated CAN frame (detected content change)
+}
+
+type integer    Bcm_long    (-2147483648 .. +2147483647);
+
+type record Bcm_timeval {
+  Bcm_long tv_sec, 
+  Bcm_long tv_usec
+}
+
+//type record length (0 .. CAN_FRAME_MAX_NUMBER) of CAN_frame Can_frame;
+
+type record SocketCAN_bcm_frame {
+// workaround:
+  LIN4_BO_LAST       opcode,
+//OCT4            opcode,
+  bitstring         flags   length (32),
+// workaround:
+  LIN4_BO_LAST       count,
+// OCT4           count,    
+  Bcm_timeval       ival1,
+  Bcm_timeval       ival2,
+  CAN_id            can_id,
+  union {
+  record length (0 .. CAN_FRAME_MAX_NUMBER) of CAN_frame can_frame,
+  record length (0 .. CAN_FRAME_MAX_NUMBER) of CANFD_frame canfd_frame
+  } frames   // should become optional and the records have at least the length 1
+}
+
+}

@@ -1,0 +1,719 @@
+/* Copyright (c) 2010, 2016  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+* Michael Josenhans
+******************************************************************************/
+//
+//  File:               SocketCANtest.ttcn
+//  Description:        SocketCAN port type test
+//
+module SocketCANtest {
+
+import from SocketCAN_Types all;
+import from SocketCAN_PortType all;
+import from Bcm all
+import from Can all
+
+const float c_guard := 10.0
+
+type enumerated SocketCAN_open_socket_type
+{ 
+  OPEN_CAN_RAW,
+  OPEN_CAN_BCM
+  //OPEN_CAN_ISOTP
+}
+
+type enumerated e_Phase {
+  e_open_socket, 
+  e_testbody1, 
+  e_testbody2,
+  e_testbody3,
+  e_testbody4,
+  e_testbody5,
+  e_testbody6,
+  e_testbody7,
+  e_testbodyEnd,
+  e_close_socket,
+  e_testcase_complete
+}
+
+type record SocketCAN_open_raw_result{
+  SocketCAN_ifr                    ifr,
+  SocketCAN_socketid               socket_id} 
+
+type record BCM_cmd  {
+  e_Phase phase,
+  SocketCAN_bcm_frame bcm_frame
+}
+
+type record length (0 .. CAN_FRAME_MAX_NUMBER) of BCM_cmd BCM_cmds
+
+type record length (0 .. CAN_FRAME_MAX_NUMBER) of SocketCAN_CAN_or_CAN_FD_frame SocketCAN_CAN_or_CAN_FD_frames
+
+// workarounds as (x .. enum2int(e_testcase_complete)) fails but:
+// workarounds as (x .. enum2int(c_testcase_complete)) works
+const e_Phase c_firstPhase        := e_open_socket
+const e_Phase c_testcase_complete := e_testcase_complete
+
+
+template SocketCAN_Result a_result(in SocketCAN_Result_code v_result_code) := {          
+  result_code   := v_result_code,
+  err           := *,
+  err_text      := *
+}
+
+template SocketCAN_socket_result 
+a_SocketCAN_socket_result(template SocketCAN_Result p_result) := {
+  id := ?, 
+  result := p_result
+}
+
+template SocketCAN_ioctl_result 
+a_SocketCAN_ioctl_result(template SocketCAN_Result p_result) := {
+  ifr := ?,
+  result := p_result
+}
+
+template SocketCAN_connect_result
+a_SocketCAN_connect_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+template SocketCAN_bind_result
+a_SocketCAN_bind_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+template SocketCAN_send_data_result
+a_SocketCAN_send_data_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+template SocketCAN_write_data_result
+a_SocketCAN_write_data_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+template SocketCAN_receive_CAN_or_CAN_FD_frame a_SocketCAN_receive_CAN_or_CAN_FD_frame(
+  template SocketCAN_socketid p_id, 
+  template SocketCAN_CAN_or_CAN_FD_frame p_frame) := { 
+  // recieved CAN or CAN FD frame
+  id        := p_id,
+  ifr       := ?,
+  frame     := p_frame, 
+  timestamp := ?
+}
+
+template SocketCAN_receive_BCM_message a_SocketCAN_receive_BCM_message(
+  template SocketCAN_socketid p_id, 
+  template SocketCAN_bcm_frame p_frame) := { 
+  // recieved CAN or CAN FD frame
+  id        := p_id,
+  ifr       := ?,
+  frame     := p_frame
+}
+
+template SocketCAN_setsockopt_result
+a_SocketCAN_setsockopt_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+type record PhaseStartReq {
+  e_Phase phase,
+  integer phase_int
+}
+type record PhaseEndInd   {
+  e_Phase phase, 
+  integer phase_int
+}
+
+type port SyncMasterPort message {
+  out PhaseStartReq
+  in  PhaseEndInd
+} with { extension "internal" }
+
+type port SyncSlavePort message {
+  in   PhaseStartReq
+  out  PhaseEndInd
+} with { extension "internal" }
+
+type record of PTC PTCSet 
+
+
+type component PTC {
+  port SyncSlavePort                  pt_sync
+  port SocketCAN_PT                   pt_socketCAN
+  var  e_Phase                        v_phase := c_firstPhase
+}
+
+//component declarations
+type component MTC{ 
+  timer t_guard
+  port  SyncMasterPort pt_sync
+  var PTCSet         v_PTCSet := {}
+}
+
+type port PTC_PT message {
+  out PhaseStartReq
+  in  PhaseEndInd
+} with { extension "internal" }
+
+
+altstep alt_awaitPhaseStartReq(in e_Phase p_phase) runs on PTC {
+  var PhaseStartReq v_PhaseStartReq;
+  [] pt_sync.receive (PhaseStartReq: {phase := p_phase, phase_int := ?}){
+    log("PTC name: ", self)
+    log("Waits for start of phase: ", p_phase)
+  }
+  // between v_phase and p_phase
+  [] pt_sync.receive (PhaseStartReq: {phase := ?, phase_int := (enum2int(c_firstPhase) .. enum2int(v_phase))}) -> value v_PhaseStartReq 
+  { 
+    //v_phase := f_incPhase(v_phase)
+    log("PTC name: ", self)
+    log("Waits for start of phase: ", p_phase)
+    log("Received completion of phase: ", p_phase)
+    f_sendPhaseEndInd()
+    repeat
+  }
+  [] pt_sync.receive (PhaseStartReq: {phase := ?, phase_int :=?}) -> value v_PhaseStartReq
+  {log("Received unexpected message:", v_PhaseStartReq);setverdict(inconc)}
+}
+
+function f_startPhase (in e_Phase p_phase) runs on MTC {
+  var integer v_i
+  var integer v_amount := sizeof(v_PTCSet)
+  var PhaseStartReq v_phaseStartReq := { phase := p_phase, phase_int := enum2int(p_phase)}
+
+  for (v_i := 0; v_i < v_amount; v_i := v_i +1){
+    log("MTC instance: ", self)
+    pt_sync.send(v_phaseStartReq) to v_PTCSet[v_i]
+  }
+}
+
+function f_incPTCPhase(in e_Phase p_currentPhase) runs on PTC return e_Phase {
+  var e_Phase v_nextPhase
+  log("PTC: ", self)
+  log("PTC instance: ", self)
+  log("Current PTC phase: ", p_currentPhase)
+  int2enum( enum2int(p_currentPhase)+1, v_nextPhase)
+  log("Next PTC phase:", v_nextPhase)
+  return v_nextPhase
+}
+
+function f_sendPhaseEndInd() runs on PTC{
+  // just to allow matching with integer ranges on the reception side, as it is not poosible to do so with enums
+  var PhaseEndInd v_PhaseEndInd := {phase := v_phase, phase_int := enum2int(v_phase)}
+  pt_sync.send(v_PhaseEndInd)
+  log("PTC: PhaseEndInd to MTC with content: ", v_PhaseEndInd, self)
+  v_phase := f_incPTCPhase(v_phase)
+}
+
+function f_addSyncSlaveSet (in PTC p_slave,
+  inout PTCSet p_set) {
+  p_set[sizeof(p_set)] := p_slave
+  return
+}
+
+function f_incMTCPhase(in e_Phase p_currentPhase) runs on MTC return e_Phase {
+  var e_Phase v_nextPhase
+  log("MTC: ", self)
+  log("Current phase: ", p_currentPhase)
+  int2enum( enum2int(p_currentPhase)+1, v_nextPhase)
+  log("Next phase:", v_nextPhase)
+  return v_nextPhase
+}
+
+function f_awaitEndPhase(in e_Phase p_phase) runs on MTC {
+  var integer v_amount:= sizeof(v_PTCSet);
+  var integer v_i
+  t_guard.start(c_guard)
+  var PhaseEndInd v_PhaseEndInd
+
+  for(v_i := 0; v_i < v_amount; v_i := v_i +1) {
+    alt {
+      [] pt_sync.receive (PhaseEndInd: {phase :=p_phase, phase_int := ?}){}
+      // value between p_phase +1  and e_testcase_complete:
+      [] pt_sync.receive (PhaseEndInd: {phase :=?, phase_int :=  (enum2int(p_phase) .. (enum2int(c_testcase_complete)))}){}
+      [] t_guard.timeout {
+        log("Timeout in MTC phase:", p_phase)
+        setverdict(inconc)
+      }
+      [] pt_sync.receive (?)  -> value v_PhaseEndInd {
+        log("Unexpected phase recieved: ", v_PhaseEndInd)
+        log("Expected phase range: ", p_phase)
+        log(" to ", c_testcase_complete)
+        setverdict(inconc)        
+      }
+      [] any port.receive{
+        log("Expected phase:", p_phase)
+        setverdict(inconc)
+      }
+    } 
+  }
+  t_guard.stop
+}
+
+function f_open_socket(in SocketCAN_open_socket_type v_socket_type) 
+runs on PTC 
+return SocketCAN_socket_result {
+
+  var SocketCAN_socket_result v_result  
+  timer t_guard
+  t_guard.start(c_guard)
+
+  var SocketCAN_socket socket
+
+  if(v_socket_type==OPEN_CAN_RAW) {
+    socket := {domain:=PF_CAN, ptype := SOCK_RAW, protocol:= CAN_RAW};
+  } else if (v_socket_type == OPEN_CAN_BCM) {
+    socket := {domain:=PF_CAN, ptype := SOCK_DGRAM, protocol:= CAN_BCM};  
+  }
+  pt_socketCAN.send(socket)  
+
+  // receive response
+  alt {
+    [] pt_socketCAN.receive(
+      a_SocketCAN_socket_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("SocketCan:Socket opened: ", v_result.id)}
+    [] pt_socketCAN.receive(a_SocketCAN_socket_result(a_result(SocketCAN_ERROR)))
+    {log("Received Opening Socket failed"); setverdict(fail)}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+  }
+  t_guard.stop
+  return v_result
+}
+
+function f_ioctl_get_if_index(in SocketCAN_socketid p_socket_id) 
+runs on PTC 
+return SocketCAN_ioctl_result {
+  var SocketCAN_ioctl_result v_result   
+  timer t_guard
+  t_guard.start(c_guard)
+
+  pt_socketCAN.send(SocketCAN_ioctl:{id:= p_socket_id, ifu := omit});
+  // receive response
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_ioctl_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Retrieved interface index", v_result.ifr.if_index)}
+    [] pt_socketCAN.receive(a_SocketCAN_ioctl_result(a_result(SocketCAN_ERROR)))
+    {log("Retrieving interface index failed", p_socket_id); setverdict(fail)}       
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)
+    }
+  } 
+  return v_result
+}
+
+function f_connect(in SocketCAN_socketid p_socket_id,
+  in SocketCAN_if_index p_if_index) 
+runs on PTC 
+return SocketCAN_connect_result {  
+  var SocketCAN_connect_result v_result                   
+  timer t_guard
+  t_guard.start(c_guard)
+
+  pt_socketCAN.send(SocketCAN_connect:{id:= p_socket_id, if_index:= p_if_index});
+  // SocketCAN_connect receive response
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_connect_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Connecting socket", p_socket_id)}
+    [] pt_socketCAN.receive(a_SocketCAN_connect_result(a_result(SocketCAN_ERROR))) 
+    {log("Connecting socket failed.", p_socket_id); setverdict(fail)}       
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+  } 
+  return v_result
+}
+
+function f_bind(in SocketCAN_socketid p_socket_id,
+  in SocketCAN_if_index p_if_index) 
+runs on PTC 
+return SocketCAN_bind_result {
+  var SocketCAN_bind_result v_result
+  timer t_guard
+  t_guard.start(c_guard)
+
+  pt_socketCAN.send(SocketCAN_bind:{id:= p_socket_id, if_index:= p_if_index});
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_bind_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Binding socket", p_socket_id)}
+    [] pt_socketCAN.receive(a_SocketCAN_bind_result(a_result(SocketCAN_ERROR))) {}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)
+    }
+  }  
+  return v_result
+}
+
+function f_send_data(in SocketCAN_socketid p_socket_id, 
+  SocketCAN_send_data_ifu p_ifu,
+  in SocketCAN_CAN_or_CAN_FD_frame p_CAN_or_CAN_FD_frame)
+runs on PTC
+return SocketCAN_send_data_result { 
+  var SocketCAN_send_data_result v_result
+
+  timer t_guard
+  t_guard.start(c_guard)
+
+  // note: the optional parameter ifu has been left out.
+  pt_socketCAN.send(SocketCAN_send_data:{id:= p_socket_id, ifu := p_ifu, frame := p_CAN_or_CAN_FD_frame});
+
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_send_data_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Sending data", p_socket_id)}
+    [] pt_socketCAN.receive(a_SocketCAN_send_data_result(a_result(SocketCAN_ERROR))) 
+    {log("Sending data failed", p_socket_id); setverdict(fail)}       
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)
+    }
+  }
+  return v_result
+}
+
+function f_receive_data(in SocketCAN_socketid p_socket_id, template SocketCAN_CAN_or_CAN_FD_frame p_frame_expected)
+runs on PTC { 
+  var SocketCAN_receive_CAN_or_CAN_FD_frame v_result
+
+  timer t_guard
+  t_guard.start(c_guard)
+
+  // receive frame or timeout
+  alt {
+
+    [] pt_socketCAN.receive(a_SocketCAN_receive_CAN_or_CAN_FD_frame(p_socket_id, p_frame_expected)) -> value v_result
+    {log("SocketCan:Expected frame received", v_result)}
+    [] pt_socketCAN.receive(?) -> value v_result
+    {log("SocketCan:Unexpected frame received!", v_result)
+      setverdict(fail)}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+  }
+}
+
+function f_receive_no_data_but_timeout(in SocketCAN_socketid p_socket_id, in float p_timeout_period)
+runs on PTC { 
+  var SocketCAN_receive_CAN_or_CAN_FD_frame v_result
+
+  timer t_guard
+  t_guard.start(p_timeout_period)
+
+  // receive frame or timeout
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_receive_CAN_or_CAN_FD_frame(p_socket_id, ?)) -> value v_result {
+      log("SocketCan:Unexpected frame received!", v_result)
+      setverdict(fail)
+    }
+    [] t_guard.timeout {
+      log("Expected timeout!")}
+  }
+}
+
+function f_write_data(in SocketCAN_socketid p_socket_id, 
+  in SocketCAN_bcm_frame p_bcm_frame) 
+runs on PTC { 
+
+  var SocketCAN_write_data_result v_result
+
+  timer t_guard
+  t_guard.start(c_guard)
+  log("BCM frame: SocketCAN_write_data:{id}:", p_socket_id)
+  log("BCM frame: SocketCAN_write_data:{bcm_tx_msg}:", p_bcm_frame)
+
+  pt_socketCAN.send(SocketCAN_write_data:{id:= p_socket_id, bcm_tx_msg := p_bcm_frame});
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_write_data_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Writing data on BCM socket: ", p_socket_id)}
+    [] pt_socketCAN.receive(a_SocketCAN_write_data_result(a_result(SocketCAN_ERROR))) 
+    {log("Writing data on BCM socket failed", p_socket_id); 
+      setverdict(fail)}       
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+  }
+}
+
+function f_receive_BCM_message(template SocketCAN_socketid p_socket_id, template SocketCAN_bcm_frame p_BCM_message_expected)
+runs on PTC { 
+  var SocketCAN_receive_BCM_message v_result
+
+  timer t_guard
+  t_guard.start(c_guard)
+
+  // receive frame or timeout
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_receive_BCM_message(p_socket_id, p_BCM_message_expected)) -> value v_result
+    {log("SocketCan:Expected frame received", v_result)}
+    [] pt_socketCAN.receive(?) -> value v_result
+    {log("SocketCan:Unexpected frame received!", v_result)
+      setverdict(fail)}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+  }
+}
+
+function f_setsockopt(in SocketCAN_socketid p_socket_id,
+  in SocketCAN_setsockopt_commandu p_command)
+runs on PTC 
+return SocketCAN_setsockopt_result{
+  var SocketCAN_setsockopt_result v_result
+
+  timer t_guard
+  t_guard.start(c_guard)
+
+  pt_socketCAN.send(SocketCAN_setsockopt:{id:= p_socket_id, command := p_command});
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_setsockopt_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Writing data", p_socket_id)}
+    [] pt_socketCAN.receive(a_SocketCAN_setsockopt_result(a_result(SocketCAN_ERROR))) 
+    {log("Writing data failed", p_socket_id); setverdict(fail)}       
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)
+    }
+  }
+  return v_result
+}
+
+function f_close_socket (in SocketCAN_socketid p_socket_id) 
+runs on PTC {
+  pt_socketCAN.send(SocketCAN_close:{id:= p_socket_id});
+}
+
+function f_open_raw()
+runs on PTC 
+return SocketCAN_open_raw_result {
+  var SocketCAN_socketid v_socket_id
+  v_socket_id := f_open_socket(OPEN_CAN_RAW).id
+  var SocketCAN_ifr v_ifr
+  v_ifr := f_ioctl_get_if_index(v_socket_id).ifr
+  var SocketCAN_bind_result v_bind_result
+  v_bind_result := f_bind(v_socket_id, v_ifr.if_index)
+
+  var SocketCAN_open_raw_result v_result
+  v_result := {ifr := v_ifr, socket_id := v_socket_id}
+
+  return v_result
+}
+
+function f_open_bcm()
+runs on PTC 
+return SocketCAN_socketid {
+  var SocketCAN_socketid v_socket_id
+  v_socket_id := f_open_socket(OPEN_CAN_BCM).id
+  log("Opening BCM socket_id", v_socket_id)
+  var SocketCAN_ifr v_ifr
+  v_ifr := f_ioctl_get_if_index(v_socket_id).ifr
+  var SocketCAN_connect_result v_connect_result
+  v_connect_result := f_connect(v_socket_id, v_ifr.if_index)
+
+  return v_socket_id
+}
+
+function f_ptc_RawSendInitiator(in e_Phase p_phase,
+  in SocketCAN_CAN_or_CAN_FD_frame v_frame_send) runs on PTC {
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  var SocketCAN_socketid v_socket_id
+  var SocketCAN_ifr v_ifr
+  var SocketCAN_send_data_ifu v_ifu
+
+  alt_awaitPhaseStartReq(e_open_socket)
+  var SocketCAN_open_raw_result res
+  res := f_open_raw();
+  v_socket_id := res.socket_id
+  v_ifr := res.ifr
+  v_ifu.if_name :=  v_ifr.if_name 
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(p_phase)
+  var SocketCAN_send_data_result send_data_result
+  send_data_result := f_send_data(v_socket_id,
+    v_ifu,
+    v_frame_send)
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(e_close_socket)
+  f_close_socket (v_socket_id)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)
+  setverdict(pass)
+  f_sendPhaseEndInd()
+}
+
+function f_ptc_RawFrameReceiver(in e_Phase p_phase,
+  template SocketCAN_CAN_or_CAN_FD_frame p_frame_expected) runs on PTC {
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  var SocketCAN_socketid v_socket_raw_id
+  var SocketCAN_ifr v_ifr
+  var SocketCAN_send_data_ifu v_ifu
+
+  alt_awaitPhaseStartReq(e_open_socket)
+  var SocketCAN_open_raw_result res
+  res := f_open_raw();
+  v_socket_raw_id := res.socket_id
+  v_ifr := res.ifr
+  v_ifu.if_name :=  v_ifr.if_name 
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(p_phase)
+  f_receive_data(v_socket_raw_id, p_frame_expected)
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(e_close_socket)
+  f_close_socket (v_socket_raw_id)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)  
+  setverdict(pass)
+  f_sendPhaseEndInd()
+}
+
+function f_ptc_RawFrameSequenceReceiver(
+  in e_Phase p_sequence_expected_phase,
+  template SocketCAN_CAN_or_CAN_FD_frames p_frame_sequence_expected, 
+  in e_Phase p_no_further_frames_expected_phase, 
+  in float p_timeout_period) runs on PTC {
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  var SocketCAN_socketid v_socket_raw_id
+  var SocketCAN_ifr v_ifr
+  var SocketCAN_send_data_ifu v_ifu
+
+  alt_awaitPhaseStartReq(e_open_socket)
+  var SocketCAN_open_raw_result res
+  res := f_open_raw();
+  v_socket_raw_id := res.socket_id
+  v_ifr := res.ifr
+  v_ifu.if_name :=  v_ifr.if_name 
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(p_sequence_expected_phase)
+  var integer v_i
+  for( v_i := 0; v_i < lengthof(p_frame_sequence_expected); v_i := v_i +1) { 
+    f_receive_data(v_socket_raw_id, p_frame_sequence_expected[v_i])
+  }
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(p_no_further_frames_expected_phase)
+  f_receive_no_data_but_timeout(v_socket_raw_id, p_timeout_period)
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(e_close_socket)
+  f_close_socket (v_socket_raw_id)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)  
+  setverdict(pass)
+  f_sendPhaseEndInd()
+}
+
+function f_ptc_bcmComandSendInitiator(in BCM_cmds p_cmd_list) runs on PTC {
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  var SocketCAN_socketid v_socket_bcm_id
+
+  alt_awaitPhaseStartReq(e_open_socket)
+  v_socket_bcm_id := f_open_bcm()
+  f_sendPhaseEndInd()
+  var integer v_i
+  for( v_i := 0; v_i < lengthof(p_cmd_list); v_i := v_i +1) { 
+    alt_awaitPhaseStartReq(p_cmd_list[v_i].phase)
+    // write mesage to BCM using v_socket_bcm_id
+    f_write_data(v_socket_bcm_id, p_cmd_list[v_i].bcm_frame)
+    f_sendPhaseEndInd()
+  }
+
+  alt_awaitPhaseStartReq(e_close_socket)
+  f_close_socket (v_socket_bcm_id)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)
+  setverdict(pass)
+  f_sendPhaseEndInd()
+}
+
+// the following function is work in progress to receive messages from BCM
+function f_ptc_bcmComandSendReceiveInitiator(in BCM_cmds p_cmd_list) runs on PTC {
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  var SocketCAN_socketid v_socket_bcm_id
+
+  alt_awaitPhaseStartReq(e_open_socket)
+  v_socket_bcm_id := f_open_bcm()
+  f_sendPhaseEndInd()
+  var integer v_i
+  for( v_i := 0; v_i < lengthof(p_cmd_list); v_i := v_i +1) { 
+    alt_awaitPhaseStartReq(p_cmd_list[v_i].phase)
+    // write mesage to BCM using v_socket_bcm_id
+    f_write_data(v_socket_bcm_id, p_cmd_list[v_i].bcm_frame)
+    f_receive_BCM_message(v_socket_bcm_id, ?)
+    f_sendPhaseEndInd()
+  }
+
+  alt_awaitPhaseStartReq(e_close_socket)
+  f_close_socket (v_socket_bcm_id)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)
+  setverdict(pass)
+  f_sendPhaseEndInd()
+}
+
+function f_ptc_bcmSendInitiator(in e_Phase p_phase, 
+  in SocketCAN_bcm_frame p_bcm_frame) runs on PTC {
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  var SocketCAN_socketid v_socket_bcm_id
+
+  alt_awaitPhaseStartReq(e_open_socket)
+  v_socket_bcm_id := f_open_bcm()
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(p_phase)
+  // write mesage to BCM using v_socket_bcm_id
+  f_write_data(v_socket_bcm_id, p_bcm_frame)
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(e_close_socket)
+  f_close_socket (v_socket_bcm_id)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)
+  setverdict(pass)
+  f_sendPhaseEndInd()
+}
+
+function f_raw_setsockopt(in e_Phase p_phase, 
+  in  SocketCAN_setsockopt_commandu p_setsockopt_command) runs on PTC {
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  var SocketCAN_socketid v_socket_id
+  var SocketCAN_ifr v_ifr
+  var SocketCAN_send_data_ifu v_ifu
+
+  alt_awaitPhaseStartReq(e_open_socket)
+  var SocketCAN_open_raw_result res
+  res := f_open_raw();
+  v_socket_id := res.socket_id
+  v_ifr := res.ifr
+  v_ifu.if_name :=  v_ifr.if_name 
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(p_phase)
+  // send command to setsockopt
+  var SocketCAN_setsockopt_result            v_setsockopt_result
+
+  // configure filters:
+  v_setsockopt_result := f_setsockopt(v_socket_id, p_setsockopt_command)
+  f_sendPhaseEndInd()
+
+  alt_awaitPhaseStartReq(e_close_socket)
+  f_close_socket (v_socket_id)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)
+  setverdict(pass)
+  f_sendPhaseEndInd()
+}
+
+// control
+// {
+//    execute(tc_can_raw0())
+// }
+}
