@@ -11,7 +11,7 @@
 //  File:               SocketCAN_BCM_test.ttcn
 //  Description:        SocketCAN testcases for CAN_BCM frames
 //
-// Revision R1A
+
 
 
 module SocketCAN_BCM_test {
@@ -41,11 +41,11 @@ testcase tc_can_bcm_TX_SETUP_TX_DELETE() runs on MTC {
 
   var SocketCAN_bcm_frame v_bcm_activation_frame, v_bcm_deactivation_frame   
 
-  v_can_frame1 := {can_id := 1, can_pdu := '1111111111111111'O}; 
-  v_can_frame2 := {can_id := 2, can_pdu := '2222222222222222'O};  
-  v_can_frame3 := {can_id := 3, can_pdu := '3333333333333333'O}; 
-  v_can_frame4 := {can_id := 4, can_pdu := '4444444444444444'O}; 
-  v_can_frame5 := {can_id := 5, can_pdu := '5555555555555555'O}; 
+  v_can_frame1 := {can_id := '00000001'O, can_pdu := '1111111111111111'O}; 
+  v_can_frame2 := {can_id := '00000002'O, can_pdu := '2222222222222222'O};  
+  v_can_frame3 := {can_id := '00000003'O, can_pdu := '3333333333333333'O}; 
+  v_can_frame4 := {can_id := '00000004'O, can_pdu := '4444444444444444'O}; 
+  v_can_frame5 := {can_id := '00000005'O, can_pdu := '5555555555555555'O}; 
 
   template SocketCAN_CAN_or_CAN_FD_frames a_expected_can_frames := {
         {can_frame := v_can_frame1},
@@ -61,12 +61,12 @@ testcase tc_can_bcm_TX_SETUP_TX_DELETE() runs on MTC {
   }
 
   v_bcm_activation_frame := {
-    opcode := 1, // TX_SETUP
+    opcode := '00000001'O, // TX_SETUP
     flags  := '00000000000000000000000000000011'B,  // refers to SETTIMER | STARTTIMER
     count  := 0,
     ival1  := {0, 0},
     ival2  := {0, 100000},
-    can_id := 66, // should become octetstring in the future
+    can_id := '00000042'O, // should become octetstring in the future
     frames := {can_frame := {
         v_can_frame1, 
         v_can_frame2,
@@ -76,12 +76,12 @@ testcase tc_can_bcm_TX_SETUP_TX_DELETE() runs on MTC {
   }
 
   v_bcm_deactivation_frame := {
-    opcode := 2, // TX_DELETE
+    opcode := '00000002'O, // TX_DELETE
     flags  := '00000000000000000000000000000000'B,
     count  := 0,
     ival1  := {0, 0},
     ival2  := {0, 0},
-    can_id := 66,
+    can_id := '00000042'O,
     frames := {can_frame := {}}
   }
 
@@ -142,11 +142,11 @@ testcase tc_can_bcm_TX_SETUP_TX_DELETE_TX_READ__broken() runs on MTC {
 
   var SocketCAN_bcm_frame v_bcm_activation_frame, v_bcm_deactivation_frame, v_bcm_read_status_frame
 
-  v_can_frame1 := {can_id := 1, can_pdu := '1111111111111111'O}; 
-  v_can_frame2 := {can_id := 2, can_pdu := '2222222222222222'O};  
-  v_can_frame3 := {can_id := 3, can_pdu := '3333333333333333'O}; 
-  v_can_frame4 := {can_id := 4, can_pdu := '4444444444444444'O}; 
-  v_can_frame5 := {can_id := 5, can_pdu := '5555555555555555'O}; 
+  v_can_frame1 := {can_id := '00000001'O, can_pdu := '1111111111111111'O}; 
+  v_can_frame2 := {can_id := '00000002'O, can_pdu := '2222222222222222'O};  
+  v_can_frame3 := {can_id := '00000003'O, can_pdu := '3333333333333333'O}; 
+  v_can_frame4 := {can_id := '00000004'O, can_pdu := '4444444444444444'O}; 
+  v_can_frame5 := {can_id := '00000005'O, can_pdu := '5555555555555555'O}; 
 
   template SocketCAN_CAN_or_CAN_FD_frames a_expected_can_frames := {
         {can_frame := v_can_frame1},
@@ -162,12 +162,12 @@ testcase tc_can_bcm_TX_SETUP_TX_DELETE_TX_READ__broken() runs on MTC {
   }
 
 v_bcm_activation_frame := {
-    opcode := 1, // TX_SETUP
+    opcode := '00000001'O, // TX_SETUP
     flags  := '00000000000000000000000000000011'B,  // refers to SETTIMER | STARTTIMER
     count  := 0,
     ival1  := {0, 0},
     ival2  := {0, 100000},
-    can_id := 66, // should become octetstring in the future
+    can_id := '00000042'O, // should become octetstring in the future
     frames := {can_frame := {
         v_can_frame1, 
         v_can_frame2,
@@ -177,17 +177,17 @@ v_bcm_activation_frame := {
   }
 
   v_bcm_deactivation_frame := {
-    opcode := 2, // TX_DELETE
+    opcode := '00000002'O, // TX_DELETE
     flags  := '00000000000000000000000000000000'B,
     count  := 0,
     ival1  := {0, 0},
     ival2  := {0, 0},
-    can_id := 66,
+    can_id := '00000042'O,
     frames := {can_frame := {}}
   }
 
   v_bcm_read_status_frame := {
-    opcode := 3, // TX_READ
+    opcode := '00000003'O, // TX_READ
     flags  := 
     // workaround for titan constants instead of enums: 
     ('00000000000000000000000000000001'B << 0) or4b // enum2int(e_CAN_BCM_SETTIMER_BITINDEX)) instead of 0
@@ -196,7 +196,7 @@ v_bcm_activation_frame := {
     count  := 0,
     ival1  := {0, 0},
     ival2  := {0, 0},
-    can_id := 66,
+    can_id := '00000042'O,
     frames := {can_frame := {}}
   }
   

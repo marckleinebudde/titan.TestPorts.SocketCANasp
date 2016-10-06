@@ -12,7 +12,7 @@
 //  File:               SocketCAN_Types.ttcn
 //  Description:        SocketCAN definition file
 //
-// Revision R1A
+
 
 module SocketCAN_Types
 {    

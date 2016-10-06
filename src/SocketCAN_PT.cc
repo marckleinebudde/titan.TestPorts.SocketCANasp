@@ -12,7 +12,7 @@
 //  File:               SocketCAN_PT.cc
 //  Description:        SocketCAN_PT test port source
 //
-// Revision R1A
+
 #include "SocketCAN_PT.hh"
 
 #include <Addfunc.hh>
@@ -68,6 +68,7 @@ struct canfd_frame;
 #ifndef	CAN_MTU
 #define CAN_MTU		(sizeof(struct can_frame))
 #endif  //CANFD_MTU
+
 
 // workaround, as canfd not defined in some older kernel versions
 // and thus canfd frames can not be used for data transfer between 
@@ -246,7 +247,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 						parameters.ifr().if__index() = ifr.ifr_ifindex;
 						parameters.ifr().if__name() = ifr.ifr_name;
 						parameters.id() = a;
-						frameref.can__id() = frame.can_id;
+						frameref.can__id() = int2oct(frame.can_id, 4);
 						frameref.can__pdu() = OCTETSTRING(len, frame.data);
 					} else {
 						// CAN FD frame received:
@@ -255,7 +256,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 						log(
 								"Received a CAN FD frame from interface %s of %d bytes and with payload length %d",
 								ifr.ifr_name, nbytes, (int)len);
-						frameref.can__id() = can_id;
+						frameref.can__id() = int2oct(can_id, 4);
 #ifdef CANFD_FRAME_STRUCT_DEFINED
 						frameref.can__flags() = BITSTRING(
 								int2bit(frame.flags,
@@ -317,7 +318,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 					parameters.ifr().if__name() = ifr.ifr_name;
 
 					uint32_t nframes = bcm_msg.msg_head.nframes;
-					parameters.frame().opcode() = bcm_msg.msg_head.opcode;
+					parameters.frame().opcode() = int2oct(bcm_msg.msg_head.opcode, 4);
 					parameters.frame().flags() = BITSTRING(
 							int2bit(INTEGER(msg_head_flags),
 									BCM_FRAME_FLAGS_SIZE));
@@ -330,7 +331,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 							bcm_msg.msg_head.ival2.tv_sec;
 					parameters.frame().ival2().tv__usec() =
 							bcm_msg.msg_head.ival2.tv_usec;
-					parameters.frame().can__id() = bcm_msg.msg_head.can_id;
+					parameters.frame().can__id() = int2oct(bcm_msg.msg_head.can_id, 4);
 #ifdef BCM_CANFD_SUPPORT
 					long flags = bcm_msg.msg_head.flags;
 					if ((flags & CAN_FD_FRAME ) == CAN_FD_FRAME ) {
@@ -344,7 +345,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 								TTCN_error("Writing data: CAN FD pdu size too large\n");
 							};
 							parameters.frame().frames().canfd__frame()[i].can__id() =
-							bcm_msg.frame[i].can_id;
+							int2oct(bcm_msg.frame[i].can_id, 4);
 							//Here the bitstring shall be stored into a
 							parameters.frame().frames().canfd__frame()[i].can__flags() =
 							BITSTRING(32,
@@ -373,7 +374,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 								len = CAN_MAX_DLEN;
 							};
 							parameters.frame().frames().can__frame()[i].can__id() =
-									bcm_msg.frame[i].can_id;
+									int2oct(bcm_msg.frame[i].can_id, 4);
 							parameters.frame().frames().can__frame()[i].can__pdu() =
 									OCTETSTRING(len,
 											(const unsigned char*) &(bcm_msg.frame[i].data));
@@ -790,14 +791,14 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 				struct can_frame frame;
 
 				log("SocketCAN: Sending CAN frame)");
-				logInteger(" to can id: ",
+				logOctet(" to can id: ",
 						send_par.frame().can__frame().can__id());
 				logOctet("containing data: ",
 						send_par.frame().can__frame().can__pdu());
 
 				size_t can_dlc =
 						send_par.frame().can__frame().can__pdu().lengthof();
-				frame.can_id = send_par.frame().can__frame().can__id();
+				frame.can_id = oct2int(send_par.frame().can__frame().can__id());
 				memcpy(frame.data, send_par.frame().can__frame().can__pdu(),
 						can_dlc);
 				frame.can_dlc = can_dlc;
@@ -858,7 +859,7 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 					struct canfd_frame fd_frame;
 
 					log("SocketCAN: Sending CAN FD frame)");
-					logInteger(" to can id: ",
+					logOctet(" to can id: ",
 							send_par.frame().canfd__frame().can__id());
 					logBitstring("with flags: ",
 							send_par.frame().canfd__frame().can__flags());
@@ -867,7 +868,7 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 
 					size_t len =
 					send_par.frame().canfd__frame().can__pdu().lengthof();
-					fd_frame.can_id = send_par.frame().canfd__frame().can__id();
+					fd_frame.can_id = oct2int(send_par.frame().canfd__frame().can__id());
 					memcpy(fd_frame.data,
 							send_par.frame().canfd__frame().can__pdu(), len);
 					fd_frame.len = len;
@@ -1008,7 +1009,7 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 				const Bcm::SocketCAN__bcm__frame& bcm__tx__msg =
 						send_par.bcm__tx__msg();
 
-				bcm_msg.msg_head.opcode = bcm__tx__msg.opcode();
+				bcm_msg.msg_head.opcode = oct2int(bcm__tx__msg.opcode());
 				bcm_msg.msg_head.flags = bit2int(
 						send_par.bcm__tx__msg().flags());
 				bcm_msg.msg_head.count = bcm__tx__msg.count();
@@ -1018,25 +1019,25 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 				bcm_msg.msg_head.ival2.tv_sec = bcm__tx__msg.ival2().tv__sec();
 				bcm_msg.msg_head.ival2.tv_usec =
 						bcm__tx__msg.ival2().tv__usec();
-				bcm_msg.msg_head.can_id = bcm__tx__msg.can__id();
+				bcm_msg.msg_head.can_id = oct2int(bcm__tx__msg.can__id());
 				bcm_msg.msg_head.nframes = nframes;
 
 				log("SocketCAN: Sending BCM Message)");
-				logInteger(" opcode: ", bcm__tx__msg.opcode());
+				logOctet(" opcode: ", bcm__tx__msg.opcode());
 				logBitstring(" flags: ", bcm__tx__msg.flags());
 				logInteger(" count: ", bcm__tx__msg.count());
 				logInteger(" ival1: ", bcm__tx__msg.ival1().tv__sec());
 				logInteger(" ival1: ", bcm__tx__msg.ival1().tv__usec());
 				logInteger(" ival2: ", bcm__tx__msg.ival2().tv__sec());
 				logInteger(" ival2: ", bcm__tx__msg.ival2().tv__usec());
-				logInteger(" can_id: ", bcm__tx__msg.can__id());
+				logOctet(" can_id: ", bcm__tx__msg.can__id());
 				logInteger(" nframes: ", nframes);
 
 				for (int i = 0; i < nframes; i++) {
 					const Bcm::SocketCAN__bcm__frame_frames_can__frame& frame =
 							bcm__tx__msg.frames().can__frame();
 
-					bcm_msg.frame[i].can_id = frame[i].can__id();
+					bcm_msg.frame[i].can_id = oct2int(frame[i].can__id());
 					unsigned int can_dlc;
 					can_dlc = frame[i].can__pdu().lengthof();
 					if (can_dlc > CAN_MAX_DLEN) {
@@ -1045,7 +1046,7 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 						can_dlc = CAN_MAX_DLEN;
 					};
 					log(" containing CAN frame:)");
-					logInteger("   can id: ", frame[i].can__id());
+					logOctet("   can id: ", frame[i].can__id());
 					logInteger("   can dlc: ", can_dlc);
 
 					bcm_msg.frame[i].can_dlc = can_dlc;
@@ -1146,7 +1147,7 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 				const Bcm::SocketCAN__bcm__frame& bcm__tx__msg =
 						send_par.bcm__tx__msg();
 
-				bcm_msg.msg_head.opcode = bcm__tx__msg.opcode();
+				bcm_msg.msg_head.opcode = oct2int(bcm__tx__msg.opcode());
 				bcm_msg.msg_head.flags = bit2int(
 						send_par.bcm__tx__msg().flags());
 				bcm_msg.msg_head.count = bcm__tx__msg.count();
@@ -1159,21 +1160,21 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 				bcm_msg.msg_head.nframes = nframes;
 
 				log("SocketCAN: Sending BCM Message)");
-				logInteger(" opcode: ", bcm__tx__msg.opcode());
+				logOctet(" opcode: ", bcm__tx__msg.opcode());
 				logBitstring(" flags: ", bcm__tx__msg.flags());
 				logInteger(" count: ", bcm__tx__msg.count());
 				logInteger(" ival1: ", bcm__tx__msg.ival1().tv__sec());
 				logInteger(" ival1: ", bcm__tx__msg.ival1().tv__usec());
 				logInteger(" ival2: ", bcm__tx__msg.ival2().tv__sec());
 				logInteger(" ival2: ", bcm__tx__msg.ival2().tv__usec());
-				logInteger(" can_id: ", send_par.bcm__tx__msg().can__id());
+				logOctet(" can_id: ", send_par.bcm__tx__msg().can__id());
 				logInteger(" nframes: ", nframes);
 
 				for (unsigned int i = 0; i < nframes; i++) {
 					const Bcm::SocketCAN__bcm__frame_frames_canfd__frame& frame =
 							bcm__tx__msg.frames().canfd__frame();
 
-					bcm_msg.frame[i].can_id = frame[i].can__id();
+					bcm_msg.frame[i].can_id = oct2int(frame[i].can__id());
 					bcm_msg.frame[i].flags = bit2int(frame[i].can__flags());
 					unsigned int len = frame[i].can__pdu().lengthof();
 					if (len > CANFD_MAX_DLEN) {
@@ -1181,7 +1182,7 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 						len = CANFD_MAX_DLEN;
 					};
 					log(" containing CAN FD frame:)");
-					logInteger("   can id: ", frame[i].can__id());
+					logOctet("   can id: ", frame[i].can__id());
 					logInteger("   can len: ", len);
 
 					bcm_msg.frame[i].len = len;
@@ -1283,9 +1284,9 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 			} else {
 				for (std::size_t i = 0; i < rfilter_size; i++) {
 					rfilter[i].can_id =
-							send_par.command().rfilter()[i].can__id();
+							oct2int(send_par.command().rfilter()[i].can__id());
 					rfilter[i].can_mask =
-							send_par.command().rfilter()[i].can__mask();
+							oct2int(send_par.command().rfilter()[i].can__mask());
 				};
 				res = setsockopt(sock, SOL_CAN_RAW, CAN_RAW_FILTER, &rfilter,
 						sizeof(rfilter));

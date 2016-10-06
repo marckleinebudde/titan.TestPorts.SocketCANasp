@@ -11,7 +11,7 @@
 //  File:               SocketCANtest.ttcn
 //  Description:        SocketCAN port type test
 //
-// Revision R1A
+
 
 module SocketCANtest {
 
@@ -158,12 +158,6 @@ type component MTC{
   port  SyncMasterPort pt_sync
   var PTCSet         v_PTCSet := {}
 }
-
-type port PTC_PT message {
-  out PhaseStartReq
-  in  PhaseEndInd
-} with { extension "internal" }
-
 
 altstep alt_awaitPhaseStartReq(in e_Phase p_phase) runs on PTC {
   var PhaseStartReq v_PhaseStartReq;

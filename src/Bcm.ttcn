@@ -9,7 +9,7 @@
  * Michael Josenhans
  ******************************************************************************/
 
-//Revision R1A
+
 
 module Bcm
 {
@@ -71,13 +71,9 @@ type record Bcm_timeval {
 //type record length (0 .. CAN_FRAME_MAX_NUMBER) of CAN_frame Can_frame;
 
 type record SocketCAN_bcm_frame {
-// workaround:
-  LIN4_BO_LAST       opcode,
-//OCT4            opcode,
+  OCT4              opcode,
   bitstring         flags   length (32),
-// workaround:
-  LIN4_BO_LAST       count,
-// OCT4           count,    
+  LIN4_BO_LAST      count,    
   Bcm_timeval       ival1,
   Bcm_timeval       ival2,
   CAN_id            can_id,

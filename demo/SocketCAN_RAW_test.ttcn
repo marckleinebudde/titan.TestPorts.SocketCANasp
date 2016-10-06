@@ -11,7 +11,6 @@
 //  File:               SocketCAN_RAW_test.ttcn
 //  Description:        SocketCAN testcases for CAN_RAW frames
 //
-// Revision R1A
 
 
 module SocketCAN_RAW_test
@@ -33,7 +32,7 @@ testcase tc_can_raw_send_and_receive_frame() runs on MTC {
 
   var SocketCAN_CAN_or_CAN_FD_frame v_frame_to_send
   v_frame_to_send := {can_frame := 
-    {can_id := 21, 
+    {can_id := '00000015'O, 
       can_pdu := '0123456789ABCDEF'O}
   }
 
@@ -50,15 +49,15 @@ testcase tc_can_raw_send_and_receive_frame() runs on MTC {
 
   all component.done;
   log("MTC done")
-  
+
   disconnect(mtc:pt_sync, v_ptc_rawSendInitiator:pt_sync)
   disconnect(mtc:pt_sync, v_ptc_rawFrameReceiver:pt_sync)
-  
+
   all component.kill;      
 }
 
 testcase tc_can_raw_setsockopt_CAN_RAW_FILTER() runs on MTC {
-  
+
   var PTC v_ptc_rawSetFilters := PTC.create("PTC1_ptc_rawSetFilters") alive
   var PTC v_ptc_rawDeactivateFilters := PTC.create("PTC1_ptc_rawDeactivateFilters") alive
 
@@ -68,12 +67,15 @@ testcase tc_can_raw_setsockopt_CAN_RAW_FILTER() runs on MTC {
   connect(mtc:pt_sync, v_ptc_rawDeactivateFilters:pt_sync)
 
   // activate filters
-  const CAN_RAW_filter c_rfilter0 := 
-  {can_id := 123, can_mask := bit2int(oct2bit(CAN_EFF_FLAG) or4b oct2bit(CAN_RTR_FLAG) or4b oct2bit(CAN_SFF_MASK))};
-  const CAN_RAW_filter c_rfilter1 := {can_id := oct2int('0200'O), can_mask := oct2int('0700'O)};
-  const CAN_RAW_filter c_rfilter2 := {can_id := bit2int(oct2bit('12345678'O) or4b oct2bit(CAN_EFF_FLAG)), 
-    can_mask := bit2int(oct2bit(CAN_EFF_FLAG) or4b oct2bit(CAN_RTR_FLAG) or4b oct2bit(CAN_EFF_MASK))};
-
+  const CAN_RAW_filter c_rfilter0 := {
+    can_id := '00000123'O,
+    can_mask := bit2oct(oct2bit(CAN_EFF_FLAG) or4b oct2bit(CAN_RTR_FLAG) or4b oct2bit(CAN_SFF_MASK))};
+  const CAN_RAW_filter c_rfilter1 := {
+    can_id := '00000200'O, 
+    can_mask := '00000700'O};
+  const CAN_RAW_filter c_rfilter2 := {
+    can_id := bit2oct(oct2bit('12345678'O) or4b oct2bit(CAN_EFF_FLAG)), 
+    can_mask := bit2oct(oct2bit(CAN_EFF_FLAG) or4b oct2bit(CAN_RTR_FLAG) or4b oct2bit(CAN_EFF_MASK))};
   const SocketCAN_setsockopt_commandu c_commandu_activate_filters := {rfilter:={c_rfilter0, c_rfilter1, c_rfilter2}}
   const SocketCAN_setsockopt_commandu c_commandu_deactivate_filters := {rfilter:={}}
 
@@ -96,12 +98,12 @@ testcase tc_can_raw_setsockopt_CAN_RAW_FILTER() runs on MTC {
 
   disconnect(mtc:pt_sync, v_ptc_rawSetFilters:pt_sync)
   disconnect(mtc:pt_sync, v_ptc_rawDeactivateFilters:pt_sync)
-  
+
   all component.kill;    
 }
 
 testcase tc_can_raw_setsockopt_CAN_RAW_ERR_FILTER() runs on MTC {
-  
+
   var PTC v_ptc_rawActivateErrorMask := PTC.create("PTC1_ptc_rawActivateErrorMask") alive
   var PTC v_ptc_rawDeactivateErrorMask := PTC.create("PTC1_ptc_rawDeactivateErrorMask") alive
 
@@ -132,12 +134,12 @@ testcase tc_can_raw_setsockopt_CAN_RAW_ERR_FILTER() runs on MTC {
 
   disconnect(mtc:pt_sync, v_ptc_rawActivateErrorMask:pt_sync)
   disconnect(mtc:pt_sync, v_ptc_rawDeactivateErrorMask:pt_sync)
-  
+
   all component.kill;    
 }
 
 testcase tc_can_raw_setsockopt_CAN_RAW_LOOPBACK() runs on MTC {
-  
+
   var PTC v_ptc_rawActivateLoopback := PTC.create("PTC1_ptc_rawActivateLoopback") alive
   var PTC v_ptc_rawDeactivateLoopback := PTC.create("PTC1_ptc_rawDeactivateLoopback") alive
 
@@ -173,7 +175,7 @@ testcase tc_can_raw_setsockopt_CAN_RAW_LOOPBACK() runs on MTC {
 }
 
 testcase tc_can_raw_setsockopt_CAN_RAW_RECV_OWN_MSGS() runs on MTC {
-  
+
   var PTC v_ptc_rawActivateReceiveOwnMessages := PTC.create("PTC1_ptc_rawActivateReceiveOwnMessages") alive
   var PTC v_ptc_rawDeactivateReceiveOwnMessages := PTC.create("PTC1_ptc_rawDeactivateReceiveOwnMessages") alive
 
@@ -209,7 +211,7 @@ testcase tc_can_raw_setsockopt_CAN_RAW_RECV_OWN_MSGS() runs on MTC {
 }
 
 testcase tc_can_raw_setsockopt_CAN_RAW_FD_FRAMES() runs on MTC {
-  
+
   var PTC v_ptc_rawActivateFD_Frames := PTC.create("PTC1_ptc_rawActivateFD_Frames") alive
   var PTC v_ptc_rawDeactivateFD_Frames := PTC.create("PTC1_ptc_rawDeactivateFD_Frames") alive
 
@@ -245,7 +247,7 @@ testcase tc_can_raw_setsockopt_CAN_RAW_FD_FRAMES() runs on MTC {
 }
 
 testcase tc_can_raw_setsockopt_CAN_RAW_JOIN_FILTERS() runs on MTC {
-  
+
   var PTC v_ptc_rawActivateJoinFilters := PTC.create("PTC1_ptc_rawActivateJoinFilters") alive
   var PTC v_ptc_rawDeactivateJoinFilters := PTC.create("PTC1_ptc_rawDeactivateJoinFilters") alive
 
