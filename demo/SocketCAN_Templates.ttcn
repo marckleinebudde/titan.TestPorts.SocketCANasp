@@ -1,0 +1,107 @@
+/* Copyright (c) 2010, 2016  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+* Michael Josenhans
+******************************************************************************/
+//
+//  File:               SocketCANtest.ttcn
+//  Description:        SocketCAN port type test
+//
+
+
+module SocketCAN_Templates {
+
+import from SocketCAN_Types all;
+import from Bcm all
+import from Can all
+
+template SocketCAN_Result a_result(in SocketCAN_Result_code v_result_code) := {          
+  result_code   := v_result_code,
+  err           := *,
+  err_text      := *
+}
+
+template SocketCAN_socket_result 
+a_SocketCAN_socket_result(template SocketCAN_Result p_result) := {
+  id := ?, 
+  result := p_result
+}
+
+template SocketCAN_ioctl_result 
+a_SocketCAN_ioctl_result(template SocketCAN_Result p_result) := {
+  ifr := ?,
+  result := p_result
+}
+
+template SocketCAN_connect_result
+a_SocketCAN_connect_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+template SocketCAN_bind_result
+a_SocketCAN_bind_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+template SocketCAN_send_data_result
+a_SocketCAN_send_data_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+template SocketCAN_write_data_result
+a_SocketCAN_write_data_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+template SocketCAN_receive_CAN_or_CAN_FD_frame a_SocketCAN_receive_CAN_frame(
+  template SocketCAN_socketid p_id, 
+  template CAN_id p_can_id,
+  template CAN_PDU p_can_pdu) := { 
+  // recieved CAN frame
+  id        := p_id,
+  ifr       := ?,
+  frame     := {can_frame := {can_id := p_can_id, can_pdu := p_can_pdu}}, 
+  timestamp := ?
+}
+
+
+template SocketCAN_receive_CAN_or_CAN_FD_frame a_SocketCAN_receive_CAN_FD_frame(
+  template SocketCAN_socketid p_id, 
+  template CAN_id p_can_id,
+  template CAN_PDU p_can_pdu) := { 
+  // recieved CAN or CAN FD frame
+  id        := p_id,
+  ifr       := ?,
+  frame     := {canfd_frame := {can_id := p_can_id, can_pdu := p_can_pdu}}, 
+  timestamp := ?
+}
+
+template SocketCAN_receive_CAN_or_CAN_FD_frame a_SocketCAN_receive_CAN_or_CAN_FD_frame(
+  template SocketCAN_socketid p_id, 
+  template SocketCAN_CAN_or_CAN_FD_frame p_frame) := { 
+  // recieved CAN or CAN FD frame
+  id        := p_id,
+  ifr       := ?,
+  frame     := p_frame, 
+  timestamp := ?
+}
+
+template SocketCAN_receive_BCM_message a_SocketCAN_receive_BCM_message(
+  template SocketCAN_socketid p_id, 
+  template SocketCAN_bcm_frame p_frame) := { 
+  // recieved CAN or CAN FD frame
+  id        := p_id,
+  ifr       := ?,
+  frame     := p_frame
+}
+
+template SocketCAN_setsockopt_result
+a_SocketCAN_setsockopt_result(template SocketCAN_Result p_result) := {
+  result := p_result
+}
+
+}

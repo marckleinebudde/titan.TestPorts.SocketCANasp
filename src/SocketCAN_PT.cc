@@ -230,7 +230,8 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 					parameters.ifr().if__name() = ifr.ifr_name;
 					parameters.id() = a;
 
-					const INTEGER can_id = frame.can_id;
+					INTEGER can_id;
+					can_id.set_long_long_val(frame.can_id);
 #ifdef CANFD_FRAME_STRUCT_DEFINED
 					const INTEGER len = frame.len;
 #else  //CANFD_FRAME_STRUCT_DEFINED
@@ -247,7 +248,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 						parameters.ifr().if__index() = ifr.ifr_ifindex;
 						parameters.ifr().if__name() = ifr.ifr_name;
 						parameters.id() = a;
-						frameref.can__id() = int2oct(frame.can_id, 4);
+						frameref.can__id() = int2oct(can_id, 4);
 						frameref.can__pdu() = OCTETSTRING(len, frame.data);
 					} else {
 						// CAN FD frame received:
@@ -318,7 +319,9 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 					parameters.ifr().if__name() = ifr.ifr_name;
 
 					uint32_t nframes = bcm_msg.msg_head.nframes;
-					parameters.frame().opcode() = int2oct(bcm_msg.msg_head.opcode, 4);
+					INTEGER opcode;
+					opcode.set_long_long_val(bcm_msg.msg_head.opcode);
+					parameters.frame().opcode() = int2oct(opcode, 4);
 					parameters.frame().flags() = BITSTRING(
 							int2bit(INTEGER(msg_head_flags),
 									BCM_FRAME_FLAGS_SIZE));
@@ -331,7 +334,9 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 							bcm_msg.msg_head.ival2.tv_sec;
 					parameters.frame().ival2().tv__usec() =
 							bcm_msg.msg_head.ival2.tv_usec;
-					parameters.frame().can__id() = int2oct(bcm_msg.msg_head.can_id, 4);
+					INTEGER bcm_head_can_id;
+					bcm_head_can_id.set_long_long_val(bcm_msg.msg_head.can_id);
+					parameters.frame().can__id() = int2oct(bcm_head_can_id, 4);
 #ifdef BCM_CANFD_SUPPORT
 					long flags = bcm_msg.msg_head.flags;
 					if ((flags & CAN_FD_FRAME ) == CAN_FD_FRAME ) {
@@ -344,8 +349,9 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 							if (len > CANFD_MAX_DLEN) {
 								TTCN_error("Writing data: CAN FD pdu size too large\n");
 							};
-							parameters.frame().frames().canfd__frame()[i].can__id() =
-							int2oct(bcm_msg.frame[i].can_id, 4);
+							INTEGER can_id;
+							can_id.set_long_long_val(bcm_msg.frame[i].can_id);
+							parameters.frame().frames().canfd__frame()[i].can__id() = int2oct(can_id, 4);
 							//Here the bitstring shall be stored into a
 							parameters.frame().frames().canfd__frame()[i].can__flags() =
 							BITSTRING(32,
@@ -373,8 +379,9 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 								TTCN_error("Writing data: CAN pdu size too large\n");
 								len = CAN_MAX_DLEN;
 							};
-							parameters.frame().frames().can__frame()[i].can__id() =
-									int2oct(bcm_msg.frame[i].can_id, 4);
+							INTEGER can_id;
+							can_id.set_long_long_val(bcm_msg.frame[i].can_id);
+							parameters.frame().frames().can__frame()[i].can__id() =	int2oct(can_id, 4);
 							parameters.frame().frames().can__frame()[i].can__pdu() =
 									OCTETSTRING(len,
 											(const unsigned char*) &(bcm_msg.frame[i].data));

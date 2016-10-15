@@ -17,8 +17,8 @@ module SocketCANtest {
 
 import from SocketCAN_Types all;
 import from SocketCAN_PortType all;
+import from SocketCAN_Templates all;
 import from Bcm all
-import from Can all
 
 const float c_guard := 10.0
 
@@ -60,69 +60,6 @@ type record length (0 .. CAN_FRAME_MAX_NUMBER) of SocketCAN_CAN_or_CAN_FD_frame 
 // workarounds as (x .. enum2int(c_testcase_complete)) works
 const e_Phase c_firstPhase        := e_open_socket
 const e_Phase c_testcase_complete := e_testcase_complete
-
-
-template SocketCAN_Result a_result(in SocketCAN_Result_code v_result_code) := {          
-  result_code   := v_result_code,
-  err           := *,
-  err_text      := *
-}
-
-template SocketCAN_socket_result 
-a_SocketCAN_socket_result(template SocketCAN_Result p_result) := {
-  id := ?, 
-  result := p_result
-}
-
-template SocketCAN_ioctl_result 
-a_SocketCAN_ioctl_result(template SocketCAN_Result p_result) := {
-  ifr := ?,
-  result := p_result
-}
-
-template SocketCAN_connect_result
-a_SocketCAN_connect_result(template SocketCAN_Result p_result) := {
-  result := p_result
-}
-
-template SocketCAN_bind_result
-a_SocketCAN_bind_result(template SocketCAN_Result p_result) := {
-  result := p_result
-}
-
-template SocketCAN_send_data_result
-a_SocketCAN_send_data_result(template SocketCAN_Result p_result) := {
-  result := p_result
-}
-
-template SocketCAN_write_data_result
-a_SocketCAN_write_data_result(template SocketCAN_Result p_result) := {
-  result := p_result
-}
-
-template SocketCAN_receive_CAN_or_CAN_FD_frame a_SocketCAN_receive_CAN_or_CAN_FD_frame(
-  template SocketCAN_socketid p_id, 
-  template SocketCAN_CAN_or_CAN_FD_frame p_frame) := { 
-  // recieved CAN or CAN FD frame
-  id        := p_id,
-  ifr       := ?,
-  frame     := p_frame, 
-  timestamp := ?
-}
-
-template SocketCAN_receive_BCM_message a_SocketCAN_receive_BCM_message(
-  template SocketCAN_socketid p_id, 
-  template SocketCAN_bcm_frame p_frame) := { 
-  // recieved CAN or CAN FD frame
-  id        := p_id,
-  ifr       := ?,
-  frame     := p_frame
-}
-
-template SocketCAN_setsockopt_result
-a_SocketCAN_setsockopt_result(template SocketCAN_Result p_result) := {
-  result := p_result
-}
 
 type record PhaseStartReq {
   e_Phase phase,
@@ -391,7 +328,7 @@ runs on PTC {
 
     [] pt_socketCAN.receive(a_SocketCAN_receive_CAN_or_CAN_FD_frame(p_socket_id, p_frame_expected)) -> value v_result
     {log("SocketCan:Expected frame received", v_result)}
-    [] pt_socketCAN.receive(?) -> value v_result
+    [] pt_socketCAN.receive(SocketCAN_receive_CAN_or_CAN_FD_frame:?) -> value v_result
     {log("SocketCan:Unexpected frame received!", v_result)
       setverdict(fail)}
     [] t_guard.timeout {
@@ -453,7 +390,7 @@ runs on PTC {
   alt {
     [] pt_socketCAN.receive(a_SocketCAN_receive_BCM_message(p_socket_id, p_BCM_message_expected)) -> value v_result
     {log("SocketCan:Expected frame received", v_result)}
-    [] pt_socketCAN.receive(?) -> value v_result
+    [] pt_socketCAN.receive(SocketCAN_receive_BCM_message:?) -> value v_result
     {log("SocketCan:Unexpected frame received!", v_result)
       setverdict(fail)}
     [] t_guard.timeout {
