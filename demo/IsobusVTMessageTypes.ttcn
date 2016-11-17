@@ -1,0 +1,380 @@
+module IsobusVTMessageTypes {
+
+import from General_Types all
+import from IsobusMessageTypes all
+
+type INT1 VTfunction
+
+type record GetMemoryReq
+{
+    VTfunction vtfunction (194),
+    OCT1           reserved2  ('FF'O),
+    INT3           memoryRequired,
+    OCT1           reserved7  ('FF'O),
+    OCT1           reserved8  ('FF'O)
+} with { variant "" };
+
+type enumerated e_GetMemoryResVersionNumber { 
+    compliantWithHannoverAgritechnica_2001_limitedfeatureSet          (0),
+    compliantWithFDISVersionISO11783_6_2002_E_Final_Draft             (1),
+    compliantWithISVersionISO11783_6_2004_E_First_Edition             (2),
+    compliantWithISVersionISO11783_6_2010_E_Second_Edition_version_3  (3),
+    compliantWithISVersionISO11783_6_2010_E_Second_Edition_version_4 (4),
+    compliantWithISVersionISO11783_6_2014_E_Third_Edition             (5)}
+with {variant "PADDING(octet)" };
+
+type enumerated e_GetMemoryResStatus { 
+    thereCanBeEnoughMemory             (0),
+    thereIsNotEnoughMemoryAvailable    (1)}
+with {variant "PADDING(octet)" }
+
+type record GetMemoryRes
+{
+    VTfunction vtfunction (194),
+    e_GetMemoryResVersionNumber versionNumber,
+    e_GetMemoryResStatus        status,
+    OCT1    reserved4  ('FF'O),
+    OCT1    reserved5  ('FF'O),
+    OCT1    reserved6  ('FF'O),
+    OCT1    reserved7  ('FF'O),
+    OCT1    reserved8  ('FF'O)
+} with { variant "" };
+
+type record GetNumberOfSoftKeysReq
+{
+    VTfunction vtfunction (192),
+    OCT1           reserved2  ('FF'O),
+    OCT1           reserved3  ('FF'O),
+    OCT1           reserved4  ('FF'O),
+    OCT1           reserved5  ('FF'O),
+    OCT1           reserved6  ('FF'O),
+    OCT1           reserved7  ('FF'O),
+    OCT1           reserved8  ('FF'O)
+} with { variant "" };
+
+type record GetNumberOfSoftKeysRes
+{
+    VTfunction vtfunction (192),
+    OCT1           navigationSoftKeys_,
+    OCT1           reserved3  ('FF'O),
+    OCT1           reserved4  ('FF'O),
+    OCT1           x_dots,
+    OCT1           y_dots,
+    OCT1           numberOfVirtualSoftKeys_,
+    OCT1           numberOfPhysicalSoftKeys_
+} with { variant "" };
+
+type record GetTextFontDataReq
+{
+    VTfunction vtfunction (195),
+    OCT1           reserved2  ('FF'O),
+    OCT1           reserved3  ('FF'O),
+    OCT1           reserved4  ('FF'O),
+    OCT1           reserved5  ('FF'O),
+    OCT1           reserved6  ('FF'O),
+    OCT1           reserved7  ('FF'O),
+    OCT1           reserved8  ('FF'O)
+} with { variant "" };
+
+
+type enumerated e_TextFontDataRes_small_font_sizes { 
+    font_6x8    (0),
+    font_8x8    (1),
+    font_8x12   (2),
+    font_12x16  (4),
+    font_16x16  (8),
+    font_16x24  (16),
+    font_24x32  (32),
+    font_32x32  (64),
+    reserved    (128)
+     }
+with {variant "PADDING(octet)" };
+
+type enumerated e_TextFontDataRes_large_font_sizes { 
+    font_32x48    (1),
+    font_48x64    (2),
+    font_64x64    (4),
+    font_64x96    (8),
+    font_96x128   (16),
+    font_128x128  (32),
+    font_128x192  (64),
+    reserved      (128)
+     }
+with {variant "PADDING(octet)" }
+
+type enumerated e_TextFontDataRes_type_attribute { 
+    normal_text                      (0),
+    bold_text                        (1),
+    crossed_out_text                 (2),
+    underlined_text                  (4),
+    italics_text                     (8),
+    inverted_text                    (16),
+    flash_inverted                   (32),
+    flash_background_and_foreground  (64),
+    proportional_font_rendering_     (128)
+     }
+with {variant "PADDING(octet)"}
+
+type record GetTextFontDataRes
+{
+    VTfunction vtfunction (195),
+    OCT1           reserved2  ('FF'O),
+    OCT1           reserved3  ('FF'O),
+    OCT1           reserved4  ('FF'O),
+    OCT1           reserved5  ('FF'O),
+    e_TextFontDataRes_small_font_sizes  small_font_sizes,
+    e_TextFontDataRes_large_font_sizes  large_font_sizes,
+    e_TextFontDataRes_type_attribute    type_attribute
+} with { variant "" };
+
+type record GetHardwareReq
+{
+    VTfunction vtfunction (199),
+    OCT1           reserved2  ('FF'O),
+    OCT1           reserved3  ('FF'O),
+    OCT1           reserved4  ('FF'O),
+    OCT1           reserved5  ('FF'O),
+    OCT1           reserved6  ('FF'O),
+    OCT1           reserved7  ('FF'O),
+    OCT1           reserved8  ('FF'O)
+} with { variant "" };
+
+
+type enumerated e_GetHardwareResGraphicType { 
+    monochrome                      (0),
+    colors16                        (1),
+    colors256                       (2)
+    }
+with {variant "PADDING(octet)"}
+
+type record e_GetHardwareResHardware {
+    boolean touchScreenandPointingEvent,
+    boolean pointingDeviceAndPointingEvent,
+    boolean multipleFrequencyAudioOutput,
+    boolean adjustableVolumeAudioOutput,
+    boolean simultaneousActivationsOfPhysicalSoftKeys,
+    boolean simultaneousActivationsOfButtons,
+    boolean dragOperationViaPointingEvent,
+    boolean intermediateCoordinatesDuringDragOperation
+} with { variant "" };
+
+type record GetHardwareRes
+{
+    VTfunction                 vtfunction (199),
+    e_GetHardwareResGraphicType  graphicType,
+    e_GetHardwareResHardware     hardware,
+    INT2                         xPixels,
+    INT2                         yPixels
+} with { variant "" };
+
+type enumerated e_Codeplane { 
+    codeplane0     (0),
+    codeplane1     (1),
+    codeplane2     (2),
+    codeplane3     (3),
+    codeplane4     (4),
+    codeplane5     (5),
+    codeplane6     (6),
+    codeplane7     (7),
+    codeplane8     (8),
+    codeplane9     (9),
+    codeplane10    (10),
+    codeplane11    (11),
+    codeplane12    (12),
+    codeplane13    (13),
+    codeplane14    (14),
+    codeplane15    (15),
+    codeplane16    (16)}
+with {variant "PADDING(octet)"}
+
+
+type record GetSupportedWidecharsReq
+{
+    VTfunction vtfunction (193),
+    e_Codeplane    codeplane,
+    OCT2           firstWideCharInInquiryRange,
+    OCT2           lastWideCharInInquiryRange,
+    OCT1           reserved7  ('FF'O),
+    OCT1           reserved8  ('FF'O)
+} with { variant "" };
+
+type record WideCharRange
+{
+    OCT2           firstWideChar, 
+    OCT2           lastWideChar
+} with { variant "" };
+
+type record of  WideCharRange WideCharRangeArray
+
+type record GetSupportedWidecharsRes
+{
+    VTfunction vtfunction (193),
+    e_Codeplane        codeplane,
+    OCT2               firstWideCharInInquiryRange,
+    OCT2               lastWideCharInInquiryRange,
+    INT1               numberOfRanges,
+    WideCharRangeArray wideCharRangeArray
+} with {
+        variant (numberOfRanges) "LENGTHTO(wideCharRangeArray)";
+	variant (numberOfRanges) "UNIT(elements)"}
+
+type record GetWindowMaskDataReq
+{
+    VTfunction vtfunction (196),
+    OCT1    reserved2  ('FF'O),
+    OCT1    reserved3  ('FF'O),
+    OCT1    reserved4  ('FF'O),
+    OCT1    reserved5  ('FF'O),
+    OCT1    reserved6  ('FF'O),
+    OCT1    reserved7  ('FF'O),
+    OCT1    reserved8  ('FF'O)
+} with { variant "" };
+
+type record GetWindowMaskDataRes
+{
+    VTfunction vtfunction (196),
+    OCT1    BackgroundColourVTUserLayoutDataMasks,
+    OCT1    BackgroundColourVTKeyCells,
+    OCT1    reserved4  ('FF'O),
+    OCT1    reserved5  ('FF'O),
+    OCT1    reserved6  ('FF'O),
+    OCT1    reserved7  ('FF'O),
+    OCT1    reserved8  ('FF'O)
+} with { variant "" };
+
+type record GetSupportedObjectsReq
+{
+    VTfunction vtfunction (197),
+    OCT1    reserved2  ('FF'O),
+    OCT1    reserved3  ('FF'O),
+    OCT1    reserved4  ('FF'O),
+    OCT1    reserved5  ('FF'O),
+    OCT1    reserved6  ('FF'O),
+    OCT1    reserved7  ('FF'O),
+    OCT1    reserved8  ('FF'O)
+} with { variant "" };
+
+type record GetSupportedObjectsRes
+{
+    VTfunction vtfunction (197),
+    INT2         numberOfBytesToFollow,
+    OCT1         supportedObjectTypes
+} with {
+        variant (numberOfBytesToFollow) "LENGTHTO(supportedObjectTypes)";
+	variant (numberOfBytesToFollow) "UNIT(elements)"}
+
+
+type enumerated e_BusyCodes { 
+    vtIsBusyUpdatingVisibleMask            (0),
+    vtIsBusySavingDataToNonVolatileMemory  (1),
+    vtIsBusyExecutingACommand              (2),
+    vtIsBusyExecutingAMacro                (3),
+    vtIsBusyParsingAnObjectPool            (4),
+    reserved                               (5),
+    auxiliaryControlsLearnModeActive       (6),
+    vtIsOutOfMemory                        (7)}
+with {variant "PADDING(octet)"}
+
+type record VTStatusReq
+{
+    VTfunction vtfunction (254),
+    OCT1 	      sourceAddressOfActiveWorkingSetMaster,
+    OCT2 	      objectIDOfTheVisibleDataAlarmMaskOfTheActiveWorkingSet,
+    OCT2 	      objectIDOfTheVisibleSoftKeyMaskOfTheActiveWorkingSet,
+    e_BusyCodes       vtBusyCodes,
+    OCT1              vtFunctionCode
+} with { variant "" };
+
+type record WorkingSetMaintenanceBitMask {
+    boolean InitiatingWorkingSetMaintenance,
+    boolean reserved2 (false),
+    boolean reserved3 (false),
+    boolean reserved4 (false),
+    boolean reserved5 (false),
+    boolean reserved6 (false),
+    boolean reserved7 (false)
+} with { variant "" };
+
+type enumerated e_WorkingSetMaintenanceVersionNumber { 
+    reserved0               (0),
+    reserved1               (1),
+    reserved2               (2),
+    compliantWithVTVersion3 (3),
+    compliantWithVTVersion4 (4),
+    compliantWithVTVersion5 (5),
+    compliantWithVTVersion2 (255)}
+with {variant "PADDING(octet)"}
+
+type record WorkingSetMaintenanceReq
+{
+    VTfunction vtfunction (255),
+    WorkingSetMaintenanceBitMask         bitMask,
+    e_WorkingSetMaintenanceVersionNumber versionNumber,
+    OCT1    reserved4  ('FF'O),
+    OCT1    reserved5  ('FF'O),
+    OCT1    reserved6  ('FF'O),
+    OCT1    reserved7  ('FF'O),
+    OCT1    reserved8  ('FF'O)
+} with { variant "" };
+
+type record DummyVTStatusRes
+{
+    VTfunction vtfunction (254)
+} with { variant "" };
+
+type union TopLevelMessage_VT2ECU_PDU
+{
+// put all VT2ECU request messages here
+    VTStatusReq                    vtStatusReq,
+// put all VT2ECU response messages here
+    GetMemoryRes                   getMemoryRes,
+    GetNumberOfSoftKeysRes         getNumberOfSoftKeysRes,
+    GetTextFontDataRes             getTextFontDataRes,
+    GetHardwareRes                 getHardwareRes,
+    GetSupportedWidecharsRes       getSupportedWidecharsRes,
+    GetWindowMaskDataRes           getWindowMaskDataRes,
+    GetSupportedObjectsRes         getSupportedObjectsRes
+}
+with {variant "TAG	(
+// put all VT2ECU request messages here
+    vtStatusReq, 	vtfunction = 254;
+// put all VT2ECU response messages here
+    getMemoryRes,                  vtfunction = 194;
+    getNumberOfSoftKeysRes,        vtfunction = 192;
+    getTextFontDataRes,            vtfunction = 195;
+    getHardwareRes,                vtfunction = 199;
+    getSupportedWidecharsRes,      vtfunction = 193;
+    getWindowMaskDataRes,          vtfunction = 196;
+    getSupportedObjectsRes,        vtfunction = 197;)"
+} 
+
+type union TopLevelMessage_ECU2VT_PDU
+{
+// put all ECU2VT request messages here
+    GetMemoryReq                    getMemoryReq,
+    GetNumberOfSoftKeysReq          getNumberOfSoftKeysReq,
+    GetTextFontDataReq              getTextFontDataReq,
+    GetHardwareReq                  getHardwareReq,
+    GetSupportedWidecharsReq        getSupportedWidecharsReq,
+    GetWindowMaskDataReq            getWindowMaskDataReq,
+    GetSupportedObjectsReq          getSupportedObjectsReq,
+    WorkingSetMaintenanceReq        workingSetMaintenanceReq
+// put all ECU2VT response messages here
+    //Dummy_ECU2VT_Res                dummy_ECU2VT_Res
+}
+with {variant "TAG	(
+// put all ECU2VT request messages here
+    getMemoryReq,                 vtfunction = 194;
+    getNumberOfSoftKeysReq,       vtfunction = 192;
+    getTextFontDataReq,           vtfunction = 195;
+    getHardwareReq,               vtfunction = 199;
+    getSupportedWidecharsReq,     vtfunction = 193;
+    getWindowMaskDataReq,         vtfunction = 196;
+    getSupportedObjectsReq,       vtfunction = 197;
+    workingSetMaintenanceReq,     vtfunction = 255;
+// put all ECU2VT response messages here
+    //dummy_ECU2VT_Res, 	          vtfunction = '00000000'B;
+    ) " 
+    } 
+
+} with { encode "RAW" }

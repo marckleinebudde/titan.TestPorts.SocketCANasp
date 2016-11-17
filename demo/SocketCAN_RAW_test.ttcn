@@ -11,6 +11,7 @@
 //  File:               SocketCAN_RAW_test.ttcn
 //  Description:        SocketCAN testcases for CAN_RAW frames
 //
+// Revision R1A
 
 
 module SocketCAN_RAW_test

@@ -12,7 +12,7 @@
 //  File:               SocketCAN_Types.ttcn
 //  Description:        SocketCAN definition file
 //
-
+// Revision R1A
 
 module SocketCAN_Types
 {    
@@ -23,6 +23,8 @@ module SocketCAN_Types
 type integer             SocketCAN_socketid;
 type charstring          SocketCAN_if_name;
 type integer             SocketCAN_if_index (-32767 .. +32767); 
+
+type octetstring SocketCAN_Isotp_PDU
 
 type record SocketCAN_timeval
 {
@@ -87,18 +89,41 @@ type record SocketCAN_ioctl_result{
   SocketCAN_Result                 result
 }
 
+type union SocketCAN_connectu{
+  SocketCAN_connect_bcm   bcm
+}
+
+type record SocketCAN_connect_bcm {
+  SocketCAN_if_index               if_index
+}
+
 type record SocketCAN_connect{
   SocketCAN_socketid               id,
-  SocketCAN_if_index               if_index
+  SocketCAN_connectu               connectu
 }
 
 type record SocketCAN_connect_result{
   SocketCAN_Result                 result
 }
 
+type record SocketCAN_bind_raw {
+  SocketCAN_if_index               if_index
+}
+
+type record SocketCAN_bind_isotp {
+  SocketCAN_if_index               if_index,
+  CAN_id                           rx_can_id,
+  CAN_id                           tx_can_id
+}
+
+type union SocketCAN_bindu{
+  SocketCAN_bind_raw   raw,
+  SocketCAN_bind_isotp isotp
+}
+
 type record SocketCAN_bind{
   SocketCAN_socketid               id,
-  SocketCAN_if_index               if_index
+  SocketCAN_bindu                  bindu
 }
 
 type record SocketCAN_bind_result{
@@ -124,7 +149,15 @@ type record SocketCAN_write_data{
 
 type record SocketCAN_write_data_result{
   SocketCAN_Result                 result
-  //SocketCAN_bcm_frame              bcm_rx_msg
+}
+
+type record SocketCAN_write_isotp{
+  SocketCAN_socketid               id,
+  SocketCAN_Isotp_PDU              pdu
+}
+
+type record SocketCAN_write_isotp_result{
+  SocketCAN_Result                 result
 }
 
 type record SocketCAN_receive_CAN_or_CAN_FD_frame{ // recieved CAN or CAN FD frame
@@ -140,6 +173,12 @@ type record SocketCAN_receive_BCM_message { // recieved CAN BCM message
   SocketCAN_bcm_frame              frame
 }
 
+type record SocketCAN_receive_isotp_pdu { // recieved Isotp PDU
+  SocketCAN_socketid               id,
+  SocketCAN_ifr                    ifr,
+  SocketCAN_Isotp_PDU              pdu
+}
+
 type record length (0 .. 255) of CAN_RAW_filter CAN_RAW_filters
   
 type union SocketCAN_setsockopt_commandu {
@@ -150,6 +189,23 @@ type union SocketCAN_setsockopt_commandu {
   CAN_RAW_fd_frames_enum           fd_frames,
   CAN_RAW_join_filters_enum        join_filters
 }
+
+//type record Setsockopt_isotp_opts{
+//  CAM_id    source_id,
+//  CAM_id    destination_id,
+//  
+//}
+//
+//type record Setsockopt_isotp_llopts{
+//  
+//}
+//
+//type union SocketCAN_setsockopt_commandu {
+//  Setsockopt_rawu          can_raw,  
+//  Setsockopt_isotp_opts    can_isotp_opts,
+//  Setsockopt_isotp_llopts  can_isotp_llopts
+//}
+
 
 type record SocketCAN_setsockopt{
   SocketCAN_socketid               id,

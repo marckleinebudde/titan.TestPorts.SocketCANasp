@@ -11,7 +11,7 @@
 //  File:               SocketCANtest.ttcn
 //  Description:        SocketCAN port type test
 //
-
+// Revision R1A
 
 module SocketCANtest {
 
@@ -25,8 +25,8 @@ const float c_guard := 10.0
 type enumerated SocketCAN_open_socket_type
 { 
   OPEN_CAN_RAW,
-  OPEN_CAN_BCM
-  //OPEN_CAN_ISOTP
+  OPEN_CAN_BCM,
+  OPEN_CAN_ISOTP
 }
 
 type enumerated e_Phase {
@@ -255,7 +255,7 @@ return SocketCAN_connect_result {
   timer t_guard
   t_guard.start(c_guard)
 
-  pt_socketCAN.send(SocketCAN_connect:{id:= p_socket_id, if_index:= p_if_index});
+  pt_socketCAN.send(SocketCAN_connect:{id:= p_socket_id, connectu := {bcm := {if_index:= p_if_index}}});
   // SocketCAN_connect receive response
   alt {
     [] pt_socketCAN.receive(a_SocketCAN_connect_result(a_result(SocketCAN_SUCCESS))) -> value v_result
@@ -276,8 +276,7 @@ return SocketCAN_bind_result {
   var SocketCAN_bind_result v_result
   timer t_guard
   t_guard.start(c_guard)
-
-  pt_socketCAN.send(SocketCAN_bind:{id:= p_socket_id, if_index:= p_if_index});
+  pt_socketCAN.send(SocketCAN_bind:{id:= p_socket_id, bindu := {raw := {if_index:= p_if_index}}});
   alt {
     [] pt_socketCAN.receive(a_SocketCAN_bind_result(a_result(SocketCAN_SUCCESS))) -> value v_result
     {log("Binding socket", p_socket_id)}
@@ -315,6 +314,7 @@ return SocketCAN_send_data_result {
   }
   return v_result
 }
+
 
 function f_receive_data(in SocketCAN_socketid p_socket_id, template SocketCAN_CAN_or_CAN_FD_frame p_frame_expected)
 runs on PTC { 

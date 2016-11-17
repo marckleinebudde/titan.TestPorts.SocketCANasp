@@ -1,0 +1,20 @@
+/*
+* Contributors:
+* Michael Josenhans
+*/
+
+module IsobusMessageTypes {
+
+
+type integer INT24nb (0..16777215) with { variant "FIELDLENGTH(24), COMP(nosign), BYTEORDER(last)" };
+type INT24nb PGN
+
+
+
+type integer INT2 (0..65535) 
+with { variant "FIELDLENGTH(16)" };
+
+type integer INT3 (0..16777215) 
+with { variant "FIELDLENGTH(24)" };
+}
+with { encode "RAW" }

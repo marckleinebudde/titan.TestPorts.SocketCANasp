@@ -1,0 +1,268 @@
+module Isotptest {
+
+import from General_Types all
+import from CanError all
+import from SocketCAN_Types all
+import from SocketCAN_PortType all
+import from SocketCAN_Templates all
+import from Can all
+import from Isotp all
+
+const float c_guard := 10.0
+
+type enumerated SocketCAN_open_socket_type
+{ 
+  OPEN_CAN_RAW,
+  OPEN_CAN_BCM,
+  OPEN_CAN_ISOTP
+}
+
+type record SocketCAN_open_isotp_result{
+  SocketCAN_ifr                    ifr,
+  SocketCAN_socketid               socket_id} 
+
+//component declarations
+type component MTC_CT
+{ 
+}
+
+type component PTC_isotp_CT
+{
+  port SocketCAN_PT                  pt_socketCAN
+  //  port Isotp_PT                      pt_isobus
+  //variables
+  //timers
+  timer T0:= 0.2
+}
+
+//type component PTC1_CT
+//{
+//  port Isotp_PT                      pt_isobus
+//  //variables
+//  //timers
+//  timer T1:= 0.2
+//
+//}
+//type component PTC2_CT
+//{
+//  //variables
+//  //timers
+//  timer T2:= 0.2
+//}
+
+//type port Isotp_PT message {
+//  out SocketCAN_Isotp_PDU
+//  in  SocketCAN_Isotp_PDU
+//} with { extension "internal" }
+
+function f_open_socket(in SocketCAN_open_socket_type v_socket_type) 
+runs on PTC_isotp_CT 
+return SocketCAN_socket_result {
+
+  var SocketCAN_socket_result v_result  
+  timer t_guard
+  t_guard.start(c_guard)
+
+  var SocketCAN_socket socket
+
+  if(v_socket_type==OPEN_CAN_RAW) {
+    socket := {domain:=PF_CAN, ptype := SOCK_RAW, protocol:= CAN_RAW};
+  } else if (v_socket_type == OPEN_CAN_BCM) {
+    socket := {domain:=PF_CAN, ptype := SOCK_DGRAM, protocol:= CAN_BCM};  
+  } else if (v_socket_type == OPEN_CAN_ISOTP) {
+    socket := {domain:=PF_CAN, ptype := SOCK_DGRAM, protocol:= CAN_ISOTP};  
+  }
+
+  pt_socketCAN.send(socket)
+
+  // receive response
+  alt {
+    [] pt_socketCAN.receive(
+      a_SocketCAN_socket_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("SocketCan:Socket opened: ", v_result.id)}
+    [] pt_socketCAN.receive(a_SocketCAN_socket_result(a_result(SocketCAN_ERROR)))
+    {log("Received Opening Socket failed"); setverdict(fail)}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+  }
+  t_guard.stop
+  return v_result
+}
+
+function f_open_isotp(in CAN_id p_rx_can_id,
+  in CAN_id p_tx_can_id)
+runs on PTC_isotp_CT 
+return SocketCAN_open_isotp_result {
+  var SocketCAN_socketid v_socket_id
+  v_socket_id := f_open_socket(OPEN_CAN_ISOTP).id
+  var SocketCAN_ifr v_ifr
+  v_ifr := f_ioctl_get_if_index(v_socket_id).ifr
+  var SocketCAN_bind_result v_bind_result
+  v_bind_result := f_bind(v_socket_id, v_ifr.if_index, p_rx_can_id, p_tx_can_id)
+
+  var SocketCAN_open_isotp_result v_result
+  v_result := {ifr := v_ifr, socket_id := v_socket_id}
+
+  return v_result
+}
+
+function f_ioctl_get_if_index(in SocketCAN_socketid p_socket_id) 
+runs on PTC_isotp_CT 
+return SocketCAN_ioctl_result {
+  var SocketCAN_ioctl_result v_result   
+  timer t_guard
+  t_guard.start(c_guard)
+
+  pt_socketCAN.send(SocketCAN_ioctl:{id:= p_socket_id, ifu := omit});
+  // receive response
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_ioctl_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Retrieved interface index", v_result.ifr.if_index)}
+    [] pt_socketCAN.receive(a_SocketCAN_ioctl_result(a_result(SocketCAN_ERROR)))
+    {log("Retrieving interface index failed", p_socket_id); setverdict(fail)}       
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)
+    }
+  } 
+  return v_result
+}
+
+function f_bind(in SocketCAN_socketid p_socket_id,
+  in SocketCAN_if_index p_if_index, 
+  in CAN_id p_rx_can_id, 
+  in CAN_id p_tx_can_id) 
+runs on PTC_isotp_CT 
+return SocketCAN_bind_result {
+  var SocketCAN_bind_result v_result
+  timer t_guard
+  t_guard.start(c_guard)
+
+  pt_socketCAN.send(SocketCAN_bind:{id:= p_socket_id, 
+      bindu := {isotp := {if_index:= p_if_index, 
+          rx_can_id := p_rx_can_id, tx_can_id := p_tx_can_id}}});
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_bind_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Binding socket", p_socket_id)}
+    [] pt_socketCAN.receive(a_SocketCAN_bind_result(a_result(SocketCAN_ERROR))) {}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)
+    }
+  }  
+  return v_result
+}
+
+function f_close_socket(in SocketCAN_socketid p_socket_id) 
+runs on PTC_isotp_CT {
+  pt_socketCAN.send(SocketCAN_close:{id:= p_socket_id});
+}
+
+function f_send_isotp_message(in SocketCAN_socketid p_socket_id, 
+  in octetstring p_pdu)
+runs on PTC_isotp_CT{
+  pt_socketCAN.send(SocketCAN_write_isotp:{p_socket_id, p_pdu})
+  alt{
+    []pt_socketCAN.receive(a_SocketCAN_write_isotp_result(a_result(SocketCAN_SUCCESS))){
+      log("Sent ISOTP Message \n") 
+    }
+  } 
+}
+
+
+function f_behaviour_isotp(in boolean p_initiator,
+  in CAN_id p_rx_can_id,
+  in CAN_id p_tx_can_id)  runs on PTC_isotp_CT
+{
+
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  var SocketCAN_socketid v_socket_id
+  var SocketCAN_ifr v_ifr
+  var SocketCAN_send_data_ifu v_ifu
+
+  var SocketCAN_open_isotp_result res
+  res := f_open_isotp(p_rx_can_id, p_tx_can_id);
+  v_socket_id := res.socket_id
+  v_ifr := res.ifr
+  v_ifu.if_name :=  v_ifr.if_name 
+
+  log("socket open(): ", res)
+
+  var boolean condition3 := true
+  //periodic reception
+
+  if (p_initiator == true) {
+    var SocketCAN_Isotp_PDU v_pdu := '00112233445566778899'O
+    f_send_isotp_message(v_socket_id, v_pdu)
+  }
+  while (condition3)
+  {
+    //var SocketCAN_socket_result v_result_socketcan
+    var SocketCAN_receive_CAN_or_CAN_FD_frame v_result_socketcan
+    var SocketCAN_receive_isotp_pdu v_result_isotp_pdu
+    //T0.start;
+
+    alt 
+    {
+      [] pt_socketCAN.receive(a_SocketCAN_receive_isotp_pdu(v_socket_id, ?, ?)) -> value v_result_isotp_pdu
+      {log("SocketCan:Isotp pdu received", v_result_isotp_pdu)
+        f_send_isotp_message(v_socket_id, v_result_isotp_pdu.pdu)
+      }
+      [] pt_socketCAN.receive(a_SocketCAN_receive_isotp_pdu(?, ?, ?)) -> value v_result_isotp_pdu
+      {log("SocketCan:Isotp pdu received from unexpected port", v_result_isotp_pdu)
+        setverdict(inconc)
+      }
+    }//endalt
+  }
+  f_close_socket(v_socket_id)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)
+  setverdict(pass)
+}//endfunction
+
+
+//test case declarations
+testcase tc_Isotp_Example001()  runs on MTC_CT
+{
+
+  var PTC_isotp_CT v_PTC_isotp1, v_PTC_isotp2
+
+  //create components
+  v_PTC_isotp1 :=PTC_isotp_CT.create; 
+  v_PTC_isotp2 :=PTC_isotp_CT.create; 
+
+  //connnect ports
+  //map ports
+
+  //start components 
+
+  //v_PTC1.start(f_behaviour1_sync());
+  v_PTC_isotp1.start(f_behaviour_isotp(true, '00000032'O, '00000023'O));
+  v_PTC_isotp2.start(f_behaviour_isotp(true, '00000023'O, '00000032'O));
+
+  //wait for termination
+  all component.done
+
+
+  //unmap ports
+  //disconnect ports
+  //terminate all parallel test componenets
+  all component.kill
+
+}
+//when the test case terminates, MTC will terminate as well
+//PTCs terminate (reach the state done) when the function with which they were started terminates
+
+control 
+{
+
+
+  execute(tc_Isotp_Example001())
+
+
+}//endcontrol
+
+} with { encode "RAW" }

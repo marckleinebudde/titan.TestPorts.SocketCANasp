@@ -1,0 +1,73 @@
+module IsobusCMMessageTypes {
+import from General_Types all
+import from IsobusMessageTypes all
+
+type OCT1 Ctrl
+
+type record RequestToSend{
+  Ctrl           ctrl ('10'O),
+  INT2           msgSizeInByte,
+  INT1           totalNumberOfPackets,
+  INT1           maxNoOfPacketsInResponseToCTS,
+  PGN            pgnOfMultiPacketMessage
+} with { variant "" };
+
+type record ClearToSend{
+  Ctrl           ctrl ('11'O),
+  INT1           totalNumberOfPackets,
+  INT1           nextPacketNumber,
+  OCT1           reserved4  ('FF'O),
+  OCT1           reserved5  ('FF'O),
+  PGN            pgnOfMultiPacketMessage
+} with { variant "" };
+
+type record EndOfMessageAcknowledgement{
+  Ctrl           ctrl ('13'O),
+  INT2           msgSizeInByte,
+  INT1           totalNumberOfPackets,
+  OCT1           reserved5  ('FF'O),
+  PGN            pgnOfMultiPacketMessage
+} with { variant "" };
+
+type record ConnectionAbort{
+  Ctrl           ctrl ('FF'O),
+  OCT1           connectionAbortReason,
+  OCT1           reserved3  ('FF'O),
+  OCT1           reserved4  ('FF'O),
+  OCT1           reserved5  ('FF'O),
+  PGN            pgnOfMultiPacketMessage
+} with { variant "" };
+
+type record BroadcastAnnonce{
+  Ctrl           ctrl ('20'O),
+  INT2           msgSizeInByte,
+  INT1           totalNumberOfPackets,
+  OCT1           reserved5  ('FF'O),
+  PGN            pgnOfMultiPacketMessage
+} with { variant "" };
+
+type union TP_CM
+{
+  RequestToSend                   requestToSend,
+  ClearToSend                     clearToSend,
+  EndOfMessageAcknowledgement     endOfMessageAcknowledgement,
+  BroadcastAnnonce                broadcastAnnounce,
+  ConnectionAbort                 connectionAbort
+}
+with {variant "TAG	(
+  // put all ECU2VT request messages here
+  requestToSend,                ctrl = '10'O;
+  clearToSend,                  ctrl = '11'O;
+  endOfMessageAcknowledgement,  ctrl = '13'O;
+  broadcastAnnounce,            ctrl = '20'O;
+  connectionAbort,              ctrl = 'FF'O;
+  ) " 
+}
+
+
+type record TP_DT{
+  INT1 seq_no,
+  OCT7 data
+} with { variant "" }
+
+} with { encode "RAW" } 

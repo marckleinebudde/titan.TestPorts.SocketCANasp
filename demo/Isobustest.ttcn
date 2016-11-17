@@ -1,0 +1,429 @@
+/* Copyright (c) 2010, 2016  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+* Michael Josenhans
+******************************************************************************/
+//
+//  File:               Isobustest.ttcn
+//  Description:        Encoder / Decoder for Isobus message frames
+//
+// Revision R1A
+
+module Isobustest {
+
+import from General_Types all
+import from CanError all
+import from SocketCANtest all
+import from SocketCAN_Types all
+import from SocketCAN_PortType all
+import from SocketCAN_Templates all
+import from Can all
+import from Isobus all
+import from Isobus_Templates all
+
+
+
+type union CAN_ID {
+  OCT4 can_eff, // 29-bit can address
+  OCT2 can_sff, // 11-bit can address
+  RTR  can_rtr, 
+  BIT29 can_err  // up to 29 can error bits
+}
+
+type bitstring BIT29 length(29)
+type enumerated RTR { RTRNULL } 
+
+type union Can_IDs {
+  BIT29 can_eff,  // CAN extended format
+  BIT11 can_sff,  // CAN basic format
+  RTR   can_rtr,  // Remote Transmission Request (RTR), seldom used
+  BIT29 can_err   // CAN Error
+}
+with { variant "" }
+
+type record Can_IDwithType {
+  INT1     cantype,   // can_id >> 29 bit
+  Can_IDs  can_ids    // can_id and4b '1FFFFFFF'O
+}
+with {
+  variant (can_ids) "CROSSTAG( 
+  can_eff, cantype = 4; 
+  can_rtr, cantype = 2; 
+  can_err, cantype = 1; 
+  can_sff, cantype = 0)" 
+}
+
+//component declarations
+type component MTC_CT
+{ 
+}
+
+type component PTC_isobus_CT
+{
+  port SocketCAN_PT                   pt_socketCAN
+  port Isobus_PT                      pt_isobus
+  //variables
+  //timers
+  timer T0:= 0.2
+}
+
+type component PTC1_CT
+{
+  port Isobus_PT                      pt_isobus
+  //variables
+  //timers
+  timer T1:= 0.2
+
+}
+type component PTC2_CT
+{
+  //variables
+  //timers
+  timer T2:= 0.2
+}
+
+type port Isobus_PT message {
+  out CAN_frame_j1939
+  in  CAN_frame_j1939
+} with { extension "internal" }
+
+type port SyncMasterPort message {
+  out PhaseStartReq
+  in  PhaseEndInd
+} with { extension "internal" }
+
+type port SyncSlavePort message {
+  in   PhaseStartReq
+  out  PhaseEndInd
+} with { extension "internal" }
+
+type record of PTC PTCSet 
+
+
+type component PTC {
+  port SyncSlavePort                  pt_sync
+  port SocketCAN_PT                   pt_socketCAN
+  var  e_Phase                        v_phase := c_firstPhase
+}
+
+
+function f_open_socket2(in SocketCAN_open_socket_type v_socket_type) 
+runs on PTC_isobus_CT 
+return SocketCAN_socket_result {
+
+  var SocketCAN_socket_result v_result  
+  timer t_guard
+  t_guard.start(c_guard)
+
+  var SocketCAN_socket socket
+
+  if(v_socket_type==OPEN_CAN_RAW) {
+    socket := {domain:=PF_CAN, ptype := SOCK_RAW, protocol:= CAN_RAW};
+  } else if (v_socket_type == OPEN_CAN_BCM) {
+    socket := {domain:=PF_CAN, ptype := SOCK_DGRAM, protocol:= CAN_BCM};  
+  }
+  pt_socketCAN.send(socket)  
+
+  // receive response
+  alt {
+    [] pt_socketCAN.receive(
+      a_SocketCAN_socket_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("SocketCan:Socket opened: ", v_result.id)}
+    [] pt_socketCAN.receive(a_SocketCAN_socket_result(a_result(SocketCAN_ERROR)))
+    {log("Received Opening Socket failed"); setverdict(fail)}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)}
+  }
+  t_guard.stop
+  return v_result
+}
+
+function f_open_raw2()
+runs on PTC_isobus_CT 
+return SocketCAN_open_raw_result {
+  var SocketCAN_socketid v_socket_id
+  v_socket_id := f_open_socket2(OPEN_CAN_RAW).id
+  var SocketCAN_ifr v_ifr
+  v_ifr := f_ioctl_get_if_index2(v_socket_id).ifr
+  var SocketCAN_bind_result v_bind_result
+  v_bind_result := f_bind2(v_socket_id, v_ifr.if_index)
+
+  var SocketCAN_open_raw_result v_result
+  v_result := {ifr := v_ifr, socket_id := v_socket_id}
+
+  return v_result
+}
+
+function f_ioctl_get_if_index2(in SocketCAN_socketid p_socket_id) 
+runs on PTC_isobus_CT 
+return SocketCAN_ioctl_result {
+  var SocketCAN_ioctl_result v_result   
+  timer t_guard
+  t_guard.start(c_guard)
+
+  pt_socketCAN.send(SocketCAN_ioctl:{id:= p_socket_id, ifu := omit});
+  // receive response
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_ioctl_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Retrieved interface index", v_result.ifr.if_index)}
+    [] pt_socketCAN.receive(a_SocketCAN_ioctl_result(a_result(SocketCAN_ERROR)))
+    {log("Retrieving interface index failed", p_socket_id); setverdict(fail)}       
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)
+    }
+  } 
+  return v_result
+}
+
+function f_bind2(in SocketCAN_socketid p_socket_id,
+  in SocketCAN_if_index p_if_index) 
+runs on PTC_isobus_CT 
+return SocketCAN_bind_result {
+  var SocketCAN_bind_result v_result
+  timer t_guard
+  t_guard.start(c_guard)
+
+  pt_socketCAN.send(SocketCAN_bind:{id:= p_socket_id, bindu := {raw := {if_index:= p_if_index}}});
+  alt {
+    [] pt_socketCAN.receive(a_SocketCAN_bind_result(a_result(SocketCAN_SUCCESS))) -> value v_result
+    {log("Binding socket", p_socket_id)}
+    [] pt_socketCAN.receive(a_SocketCAN_bind_result(a_result(SocketCAN_ERROR))) {}
+    [] t_guard.timeout {
+      log("timeout!")
+      setverdict(fail)
+    }
+  }  
+  return v_result
+}
+
+function f_close_socket2 (in SocketCAN_socketid p_socket_id) 
+runs on PTC_isobus_CT {
+  pt_socketCAN.send(SocketCAN_close:{id:= p_socket_id});
+}
+
+function f_behaviour_isobus(in PTC1_CT v_ptc1)  runs on PTC_isobus_CT
+{
+
+  map(self:pt_socketCAN, system:pt_socketCAN)
+  connect(v_ptc1:pt_isobus, self:pt_isobus)
+
+  var SocketCAN_socketid v_socket_id
+  var SocketCAN_ifr v_ifr
+  var SocketCAN_send_data_ifu v_ifu
+
+  var SocketCAN_open_raw_result res
+  res := f_open_raw2();
+  v_socket_id := res.socket_id
+  v_ifr := res.ifr
+  v_ifu.if_name :=  v_ifr.if_name 
+
+  log("socket open(): ", res)
+
+  var boolean condition3 := true
+  //periodic reception
+
+  while (condition3)
+  {
+    //var SocketCAN_socket_result v_result_socketcan
+    var SocketCAN_receive_CAN_or_CAN_FD_frame v_result_socketcan
+    var CAN_frame_j1939 v_result_can_frame_j1939
+    //T0.start;
+
+    alt 
+    {
+      [] pt_socketCAN.receive(a_SocketCAN_receive_CAN_frame(v_socket_id, t_CAN_EFF_FLAG, ?)) -> value v_result_socketcan
+      {log("SocketCan:Expected frame received", v_result_socketcan)
+        // it is assumed that no can fd frames are received here
+        if(ischosen(v_result_socketcan.frame.can_frame)){
+          var CAN_frame_j1939  v_CAN_frame_j1939 := can2j1939frame(v_result_socketcan.frame.can_frame)
+          pt_isobus.send(v_CAN_frame_j1939) to v_ptc1
+        } else {
+          setverdict(inconc, "reception of canfd frame not expected") 
+        }
+      }
+      [] pt_socketCAN.receive(?) -> value v_result_socketcan
+      {log("SocketCan:Unexpected frame received!", v_result_socketcan)
+        setverdict(fail)
+      }
+    }//endalt
+  }
+  f_close_socket2(v_socket_id)
+  disconnect(self:pt_isobus, v_ptc1:pt_isobus)
+  unmap(self:pt_socketCAN, system:pt_socketCAN)
+  setverdict(pass)
+}//endfunction
+
+
+function  f_behaviour1_sync()  runs on PTC1_CT
+{
+
+  var boolean condition1 := true
+  var CAN_frame_j1939 v_can_frame_j1939
+  //periodic reception
+
+  while (condition1)
+  {
+    //T1.start;
+
+    alt 
+    {
+
+      /*  []syncport.receive("halt") {
+      condition1:=false  } */
+
+      []pt_isobus.receive(CAN_frame_j1939:?) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received: ",  v_can_frame_j1939);
+      } 
+
+      //[]T1.timeout; 
+
+    }//endalt
+  }
+}//endfunction  var boolean condition1
+
+
+
+
+testcase tc_encdec() runs on MTC_CT
+
+{
+
+
+
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000110'B, res := '0'B, dp := '1'B, pf := 'E9'O, ps := 'FD'O, sa := 'E6'O }, can_pdu := { addressClaimed := { name := 'A80056AAABBCC778'O }}}
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log("--------------------------------------------")
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+  log("--------------------------------------------")
+
+  template CAN_frame_j1939 t_CAN_frame_j1939_2 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := 'FD'O, sa := 'C0'O }, can_pdu := { requestForAddressClaimed := {pgn := 123}} }
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_2)))
+  log("--------------------------------------------")
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_2))))
+  log("--------------------------------------------")
+
+  template CAN_frame_j1939 t_CAN_frame_j1939_3 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := 'FD'O, sa := 'C0'O }, can_pdu := { cannotClaimSourceAddress := { name := '1122334455667788'O }}}
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_3)))
+  log("--------------------------------------------")
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_3))))
+  log("--------------------------------------------")
+
+  template CAN_frame_j1939 t_CAN_frame_j1939_6 :=  { can_j1939 := { prio := '000110'B, res := '0'B, dp := '1'B, pf := 'E6'O , ps := 'FD'O, sa := '00'O }, can_pdu := { commandedAddress := {
+        name:='1122334455667788'O,
+        newSourceAddress:='AA'O
+      } } }
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_6)))
+  log("--------------------------------------------")
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_6))))
+  log("--------------------------------------------")
+
+}
+
+testcase tc_encdec_vt2ecu_vtStatusReq() runs on MTC_CT
+{
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := '00'O, sa := '00'O }, can_pdu := 
+    {vt2ecu := {vtStatusReq :=
+        { vtfunction := 254, 
+          sourceAddressOfActiveWorkingSetMaster := '11'O,
+          objectIDOfTheVisibleDataAlarmMaskOfTheActiveWorkingSet := '2233'O,
+          objectIDOfTheVisibleSoftKeyMaskOfTheActiveWorkingSet := '4455'O,
+          vtBusyCodes := vtIsBusyExecutingACommand,
+          vtFunctionCode := '66'O}}}}
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+}
+
+testcase tc_encdec_ecu2vt_getMemoryReq() runs on MTC_CT
+{
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := '00'O, sa := '00'O }, can_pdu := 
+    {ecu2vt := {getMemoryReq :=
+        { vtfunction := 194, 
+          reserved2 := 'FF'O,
+          memoryRequired := 1234567,
+          reserved7 := 'FF'O,
+          reserved8 := 'FF'O}}}}
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+}
+
+testcase tc_encdec_ecu2vt_getMemoryReq_with_templateI() runs on MTC_CT // using a template
+{
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := '00'O, sa := '00'O }, can_pdu := 
+    {ecu2vt := {getMemoryReq := t_GetMemoryReq(1234567)}}}
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+}
+
+testcase tc_encdec_ecu2vt_getMemoryReq_with_template_II() runs on MTC_CT // using a template
+{
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := '00'O, sa := '00'O }, can_pdu := 
+    t_GetMemoryReq_pdu(1234567)}
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+}
+
+testcase tc_dec_requestForAddressClaimed() runs on MTC_CT
+{
+
+  var octetstring j1939_pdu
+  j1939_pdu := '98EAFFFE00EE00'O
+
+  log(j1939_pdu)
+  log("--------------------------------------------")
+  log(f_decode_CAN_frame_j1939(j1939_pdu))
+  log("--------------------------------------------")
+}
+
+//test case declarations
+testcase tc_Example001()  runs on MTC_CT
+{
+
+  var PTC_isobus_CT v_PTC_isobus 
+  var PTC1_CT v_PTC1
+
+  //create components
+  v_PTC_isobus:=PTC_isobus_CT.create; 
+  v_PTC1:=PTC1_CT.create; 
+
+  //connnect ports
+  //map ports
+
+  //start components 
+
+  v_PTC1.start(f_behaviour1_sync());
+  v_PTC_isobus.start(f_behaviour_isobus(v_PTC1));
+
+  //wait for termination
+  all component.done
+
+
+  //unmap ports
+  //disconnect ports
+  //terminate all parallel test componenets
+  all component.kill
+
+}
+//when the test case terminates, MTC will terminate as well
+//PTCs terminate (reach the state done) when the function with which they were started terminates
+
+control 
+{
+
+
+  execute(tc_Example001())
+
+
+}//endcontrol
+
+} with { encode "RAW" } 

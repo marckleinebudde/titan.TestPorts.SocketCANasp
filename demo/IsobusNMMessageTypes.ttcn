@@ -1,0 +1,38 @@
+/*
+* Contributors:
+* Michael Josenhans
+*/
+
+module IsobusNMMessageTypes {
+
+import from General_Types all
+import from IsobusMessageTypes all
+
+type OCT1 DestinationAddress
+
+type OCT1 PDUFormat
+type OCT1 SourceAddress
+type OCT8 NAME 
+
+type record CannotClaimSourceAddress
+{
+  NAME          name
+} with { variant "" }
+
+type record AddressClaimed
+{
+  NAME          name
+} with { variant "" }
+
+type record RequestForAddressClaimed {
+  PGN          pgn
+} with { variant "" }
+
+
+
+type record CommandedAddress {
+  NAME          name,
+  SourceAddress newSourceAddress
+} with { variant "" }
+
+}with { encode "RAW" }

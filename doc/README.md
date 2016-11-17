@@ -88,6 +88,20 @@ Notes:
  Return values other than the error code by the BCM are not yet supported.
  BCM wth CAN FD frames has not been tested yet.
 
+-ISOTP:
+ Iso TP functionality has been added, however currently no options like padding 
+ are supported. Feel free to request needed options.
+
+ First install the isotp kernel module as descibed here:
+ https://github.com/hartkopp/can-isotp-modules
+  
+  ./make_isotp.sh
+  sudo insmod ./can-isotp.ko
+ 
+
+ There is an endlessly running test case: 
+ ttcn3_start SocketCAN SocketCAN.cfg Isotptest.tc_Isotp_Example001
+ 
 -Merging of logfiles:
  To merge the logfies from multiple Parallel Test Componets (PTCs) from a
  single run in timely order into sigle file, run:

@@ -1,0 +1,64 @@
+module Isobus_Templates {
+
+import from IsobusMessageTypes all
+import from IsobusVTMessageTypes all
+import from Isobus all
+import from General_Types all
+
+
+template TopLevelMessage_ECU2VT_PDU t_GetMemoryReqX( INT3 p_memoryRequired) := {
+  getMemoryReq := {
+    vtfunction                      := 194,
+    reserved2                       := 'FF'O,
+    memoryRequired                  := p_memoryRequired,
+    reserved7                       := 'FF'O,
+    reserved8                       := 'FF'O
+  }
+};
+
+template AnyIsoBusPdu t_ecu2vt(template TopLevelMessage_ECU2VT_PDU t_Message) := {
+  ecu2vt := t_Message
+};
+
+template AnyIsoBusPdu t_vt2ecu(template TopLevelMessage_VT2ECU_PDU t_Message) := {
+  vt2ecu := t_Message
+};
+
+template AnyIsoBusPdu t_GetMemoryReq_pdu(INT3 p_memoryRequired) := {
+     ecu2vt := {getMemoryReq := t_GetMemoryReq(p_memoryRequired)}
+}
+
+
+template GetMemoryReq t_GetMemoryReq(INT3 p_memoryRequired) := {
+    vtfunction                    := 194,
+    reserved2                     := 'FF'O,
+    memoryRequired                := p_memoryRequired,
+    reserved7                     := 'FF'O,
+    reserved8                     := 'FF'O
+}
+
+template GetMemoryRes t_GetMemoryRes(e_GetMemoryResVersionNumber p_versionNumber, e_GetMemoryResStatus p_status) := {
+  versionNumber                   := p_versionNumber,
+  status                          := p_status
+}
+
+template GetSupportedWidecharsReq t_GetSupportedWidecharsReq(e_Codeplane p_codeplane, OCT2 p_firstWideCharInInquiryRange, OCT2 p_lastWideCharInInquiryRange) := {
+  vtfunction                  := 193,
+  codeplane                   := p_codeplane,
+  firstWideCharInInquiryRange := p_firstWideCharInInquiryRange,
+  lastWideCharInInquiryRange  := p_lastWideCharInInquiryRange,
+  reserved7                   := 'FF'O,
+  reserved8                   := 'FF'O
+}
+
+template GetSupportedWidecharsRes t_GetSupportedWidecharsRes(OCT2 p_firstWideCharInInquiryRange, 
+  OCT2 p_lastWideCharInInquiryRange,
+  INT1 p_numberOfRanges, 
+  WideCharRangeArray p_wideCharRangeArray) := 
+{
+  firstWideCharInInquiryRange := p_firstWideCharInInquiryRange,
+  lastWideCharInInquiryRange  := p_lastWideCharInInquiryRange,
+  numberOfRanges              := p_numberOfRanges, 
+  wideCharRangeArray          := p_wideCharRangeArray
+}
+}

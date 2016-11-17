@@ -12,7 +12,7 @@
 //  File:               SocketCAN_PT.hh
 //  Description:        SocketCAN test port header
 // 
-
+// Revision R1A
 
 #ifndef SocketCAN__PT_HH
 #define SocketCAN__PT_HH
@@ -63,6 +63,7 @@ protected:
 	void outgoing_send(const SocketCAN__Types::SocketCAN__send__data& send_par);
 	void outgoing_send(
 			const SocketCAN__Types::SocketCAN__write__data& send_par);
+      	void outgoing_send(const SocketCAN__Types::SocketCAN__write__isotp& send_par);
 	void outgoing_send(const SocketCAN__Types::SocketCAN__setsockopt& send_par);
 	void outgoing_send(const SocketCAN__Types::SocketCAN__close& send_par);
 	virtual void incoming_message(
@@ -77,10 +78,14 @@ protected:
 			const SocketCAN__Types::SocketCAN__send__data__result& incoming_par) = 0;
 	virtual void incoming_message(
 			const SocketCAN__Types::SocketCAN__write__data__result& incoming_par) = 0;
+        virtual void incoming_message(
+                        const SocketCAN__Types::SocketCAN__write__isotp__result& incoming_par) = 0;
 	virtual void incoming_message(
 			const SocketCAN__Types::SocketCAN__receive__CAN__or__CAN__FD__frame& incoming_par) = 0;
 	virtual void incoming_message(
 			const SocketCAN__Types::SocketCAN__receive__BCM__message& incoming_par) = 0;
+        virtual void incoming_message(
+                        const SocketCAN__Types::SocketCAN__receive__isotp__pdu& incoming_par) = 0;
 	virtual void incoming_message(
 			const SocketCAN__Types::SocketCAN__setsockopt__result& incoming_par) = 0;
         void set_asp_params();
@@ -101,7 +106,8 @@ private:
 	enum socket_protocol_family_enum {
 		SOCKET_NO_PROTOCOL = 0,
 		SOCKET_PROTOCOL_CAN_BCM = 1,
-		SOCKET_PROTOCOL_CAN_RAW = 2
+		SOCKET_PROTOCOL_CAN_RAW = 2,
+		SOCKET_PROTOCOL_CAN_ISOTP = 6
 	};
 
 	struct sock_data {

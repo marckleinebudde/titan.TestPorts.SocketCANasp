@@ -1,0 +1,326 @@
+/* Copyright (c) 2010, 2016  Ericsson AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v1.0
+* which accompanies this distribution, and is available at
+* http://www.eclipse.org/legal/epl-v10.html
+*
+* Contributors:
+* Michael Josenhans
+******************************************************************************/
+//
+//  File:               Isobus.ttcn
+//  Description:        Encoder / Decoder for Isobus message frames
+//
+// Revision R1A
+
+module Isobus {
+import from General_Types all
+import from Can all
+import from IsobusMessageTypes all
+import from IsobusCMMessageTypes all
+import from IsobusNMMessageTypes all
+import from IsobusVTMessageTypes all
+
+// Note:
+// SocketCAN Error frames are not considered here
+// SocketCAN RTR frames are not considered here
+// SocketCAN Basic frames are not considered here
+
+external function encode_CAN_frame_j1939mod(in CAN_frame_j1939mod pdu) return octetstring 
+with { extension "prototype(convert) encode(RAW)" }
+external function decode_CAN_frame_j1939mod(in octetstring data) return CAN_frame_j1939mod
+with { extension "prototype(convert) decode(RAW)" }
+
+
+
+
+
+
+const octetstring ISOBUS_PRIORITY_MASK    := '1C000000'O;
+const octetstring ISOBUS_RESERVED_MASK    := '02000000'O;
+const octetstring ISOBUS_DATAPAGE_MASK    := '01000000'O;
+const octetstring ISOBUS_PDUFORMAT_MASK   := '00FF0000'O;
+const octetstring ISOBUS_PDUSPECIFIC_MASK := '0000FF00'O;
+const octetstring ISOBUS_SOURCEADDRESS_MASK := '000000FF'O;
+
+//type BIT3 Priority 
+
+type bitstring Priority length(6)
+with {
+  variant "ALIGN(left)";
+  variant "FIELDLENGTH(6)"
+}
+
+
+
+type record J1939 { // Error & RTR Frames are not considered here
+  //PGN   pgn optional,
+  //BIT3           ignore,
+  Priority       prio,
+  BIT1           res, 
+  BIT1           dp,
+  OCT1           pf,
+  OCT1           ps,
+  SourceAddress  sa
+} with { variant "FIELDORDER(msb)" }
+
+
+
+type record J1939mod { // Error & RTR Frames are not considered here
+  //PGN   pgn optional,
+  //BIT3           ignore,
+  Priority       prio,
+  BIT1           res, 
+  BIT1           dp,
+  OCT1           pf,
+  OCT1           ps,
+  SourceAddress  sa,
+  OCT3           comp
+} with { variant "FIELDORDER(msb)" }
+
+
+type union AnyIsoBusPdu {
+  TopLevelMessage_VT2ECU_PDU vt2ecu,  // Message Virtual Terminal (VT) to ECU
+  TopLevelMessage_ECU2VT_PDU ecu2vt,   // Message ECU to Virtual Terminal (VT)
+  RequestForAddressClaimed   requestForAddressClaimed,
+  TP_DT                      tp_dt,
+  TP_CM                      tp_cm,
+  CannotClaimSourceAddress cannotClaimSourceAddress,
+  AddressClaimed addressClaimed,
+  CommandedAddress commandedAddress
+  // other upper layer isobus protocols like Task Comtroller are added here ...
+}
+with { variant "" }
+
+type record CAN_frame_j1939 {
+  J1939               can_j1939,
+  AnyIsoBusPdu        can_pdu 
+}with {
+  variant (can_pdu) "CROSSTAG( 
+  vt2ecu,                   can_j1939.pf = 'E6'O;  //230
+  ecu2vt,                   can_j1939.pf = 'E7'O;  //231
+  requestForAddressClaimed, can_j1939.pf = 'EA'O;  //234
+  cannotClaimSourceAddress, {can_j1939.pf = 'EE'O, can_j1939.ps = 'FF'O, can_j1939.sa = 'FE'O}; //238 all and conjuction needed!!!!!!
+  addressClaimed,           {can_j1939.pf = 'EE'O, can_j1939.ps = 'FF'O};  //238 all and conjuction needed!!!!!!
+  commandedAddress,         {can_j1939.pf = 'FE'O, can_j1939.ps = 'D8'O})" //254 all and conjuction needed!!!!!!
+}
+
+
+type record CAN_frame_j1939mod {
+  J1939mod            can_j1939,
+  AnyIsoBusPdu        can_pdu 
+}with {
+  variant (can_pdu) "CROSSTAG( 
+  vt2ecu,                   can_j1939.comp = 'E60000'O;  //230
+  ecu2vt,                   can_j1939.comp = 'E70000'O;  //231
+  requestForAddressClaimed, can_j1939.comp = 'EA0000'O;  //234
+  tp_dt,                    can_j1939.comp = 'EB0000'O;  
+  tp_cm,                    can_j1939.comp = 'EC0000'O;  
+  cannotClaimSourceAddress, can_j1939.comp = 'EEFFFE'O; //238 all and conjuction needed!!!!!!
+  addressClaimed,           can_j1939.comp = 'EEFF00'O;  //238 all and conjuction needed!!!!!!
+  commandedAddress,         can_j1939.comp = 'FED800'O)" //254 all and conjuction needed!!!!!!
+}
+
+//---------------------------------------------------------------------------------------
+function j1939frame2can(in CAN_frame_j1939 p_can_frame_j1939, in Priority p_priority, in DestinationAddress p_da, in SourceAddress p_sa) return CAN_frame {
+  //---------------------------------------------------------------------------------------
+  var CAN_frame v_can_frame
+
+  v_can_frame.can_id := pdu1_j1939id2canid(p_can_frame_j1939.can_j1939, p_priority, p_da, p_sa)
+  // v_can_frame.can_pdu := encode_AnyIsoBusPdu(p_can_frame_j1939.can_pdu)
+  v_can_frame.can_pdu := substr(f_encode_CAN_frame_j1939(p_can_frame_j1939),0,3)//strip 3 byte header 
+  return v_can_frame
+}
+
+function pdu1_j1939id2canid(in J1939 p_j1939, in Priority p_priority, in DestinationAddress p_da, in SourceAddress p_sa) return CAN_id{
+  var CAN_id v_can_id
+  v_can_id := bit2oct(oct2bit(p_sa) or4b (oct2bit(p_da) << 8) or4b (oct2bit(p_j1939.pf) << 16) or4b ((p_j1939.dp) << 24) or4b 
+    ((p_j1939.res) << 25) or4b (int2bit(bit2int(p_priority), 32) << 26))
+  return v_can_id
+}
+//---------------------------------------------------------------------------------------
+function can2j1939frame(CAN_frame p_can_frame) return CAN_frame_j1939 {
+  //--------------------------------------------------------------------------------------- 
+  var CAN_frame_j1939 v_can_frame_j1939
+
+  log("can_id", p_can_frame.can_id)  
+  log("can_pdu", p_can_frame.can_pdu)
+
+  v_can_frame_j1939:=f_decode_CAN_frame_j1939(p_can_frame.can_id& p_can_frame.can_pdu)
+
+  log("Higher layer octet pdustring: ", v_can_frame_j1939)
+  return v_can_frame_j1939
+}
+
+function canid2j1939(in CAN_id p_can_id) return J1939 {
+  var bitstring v_can_id_bitstring
+  var Priority v_priority
+  var BIT1 v_reserved    // BIT1
+  var BIT1 v_datapage    // BIT1
+  var OCT1 v_pduformat   // OCT1
+  var OCT1 v_pduspecifc  // OCT1
+  var OCT1 v_sourceaddress  // OCT1
+  var PGN  v_pgn
+  var J1939 v_j1939
+
+  v_can_id_bitstring := oct2bit(p_can_id)
+  v_priority      := substr(v_can_id_bitstring, 3, 3)
+  v_reserved      := v_can_id_bitstring[6]
+  v_datapage      := v_can_id_bitstring[7]
+  v_pduformat     := p_can_id[1] //(p_can_id and4b ISOBUS_PDUFORMAT_MASK) >> 2   // shift 16 bits = 2 octets
+  v_pduspecifc    := p_can_id[2] // (p_can_id and4b ISOBUS_PDUSPECIFIC_MASK) >> 1 // shift  8 bits = 1 octet
+  v_sourceaddress := p_can_id[3] //(p_can_id and4b ISOBUS_SOURCEADDRESS_MASK)
+
+  if (oct2int(v_pduformat) < 240) {
+    v_pgn := bit2int(v_reserved)*2*256*256 + bit2int(v_datapage)*256 *256 + oct2int(v_pduformat)*256
+
+  } else  {
+    v_pgn := bit2int(v_reserved)*2*256*256 + bit2int(v_datapage)*256 *256 + oct2int(v_pduformat)*256 + oct2int(v_pduspecifc)
+  }
+  v_j1939 := {/*pgn :=  v_pgn, */prio := v_priority, res := v_reserved, dp := v_datapage, pf := v_pduformat, ps := v_pduspecifc, sa := v_sourceaddress}
+  return v_j1939
+}
+
+//********************************************************************************-
+
+
+
+//---------------------------------------------------------------------------
+function f_insert_aux_hdr(in octetstring p_os) return octetstring
+//---------------------------------------------------------------------------
+{
+  var OCT3 v_os
+
+
+  v_os[0]:=p_os[1];//pf
+  if(p_os[1] == 'FE'O)
+  {
+    if (p_os[2]=='D8'O) {v_os[1]:='D8'O;v_os[2]:='00'O;}
+  }
+
+  else if(p_os[1] == 'EE'O)
+  {
+    if (p_os[2] == 'FF'O) 
+    { if (p_os[3]=='FE'O) {v_os[1]:='FF'O;v_os[2]:='FE'O;}
+      else                  {v_os[1]:='FF'O;v_os[2]:='00'O;}
+    }
+
+  } 
+
+
+  else  { v_os[1]:='00'O;v_os[2]:='00'O;}
+
+
+  //log("replace(p_os,4,0,v_os)  :",replace(p_os,4,0,v_os))
+
+  return replace(p_os,4,0,v_os)//insert aux header
+}
+
+//---------------------------------------------------------------------------
+function f_remove_aux_hdr(in octetstring p_os) return octetstring
+//---------------------------------------------------------------------------
+{
+  //log("p_os  :",p_os)
+
+
+  p_os[1]:=p_os[4]; //pf := aux[0];
+  if (p_os[4] == 'EE'O)  
+  {
+    if (p_os[6] == 'FE'O ) { //'EEFFFE' O
+      p_os[2]:=p_os[5]; //ps := aux[1];
+      p_os[3]:=p_os[6]; //sa := aux[2];
+    }
+    else    { //'EEFFXX'O
+      p_os[2]:=p_os[5]; //ps := aux[1];
+    }
+  } 
+  else  if  (p_os[4] == 'FE'O) //'FED8XX'O
+  {
+    p_os[2]:=p_os[5]; //ps := aux[1];
+  }
+
+
+  //log("p_os  :",p_os)
+
+  //log("replace(p_os,4,3,''O)   :",replace(p_os,4,3,''O))
+  return replace(p_os,4,3,''O); //remove aux header
+}
+
+//---------------------------------------------------------------------------
+function f_map_mod2frame(in CAN_frame_j1939mod p_frame) return CAN_frame_j1939
+//---------------------------------------------------------------------------
+{
+  var CAN_frame_j1939 v_CAN_frame_j1939
+
+  v_CAN_frame_j1939.can_pdu:=p_frame.can_pdu;
+  v_CAN_frame_j1939.can_j1939.prio:=p_frame.can_j1939.prio;
+  v_CAN_frame_j1939.can_j1939.res:=p_frame.can_j1939.res;
+  v_CAN_frame_j1939.can_j1939.dp:=p_frame.can_j1939.dp;
+  v_CAN_frame_j1939.can_j1939.pf:=p_frame.can_j1939.pf;
+  v_CAN_frame_j1939.can_j1939.ps:=p_frame.can_j1939.ps;
+  v_CAN_frame_j1939.can_j1939.sa:=p_frame.can_j1939.sa;
+
+
+  //log("v_CAN_frame_j1939   :",v_CAN_frame_j1939)
+  return v_CAN_frame_j1939
+
+}
+
+
+//---------------------------------------------------------------------------
+function f_map_frame2mod(in CAN_frame_j1939 p_frame) return CAN_frame_j1939mod
+//---------------------------------------------------------------------------
+{
+  var CAN_frame_j1939mod v_CAN_frame_j1939mod
+
+
+  v_CAN_frame_j1939mod.can_pdu:=p_frame.can_pdu;
+  v_CAN_frame_j1939mod.can_j1939.prio:=p_frame.can_j1939.prio;
+  v_CAN_frame_j1939mod.can_j1939.res:=p_frame.can_j1939.res;
+  v_CAN_frame_j1939mod.can_j1939.dp:=p_frame.can_j1939.dp;
+  v_CAN_frame_j1939mod.can_j1939.pf:=p_frame.can_j1939.pf;
+  v_CAN_frame_j1939mod.can_j1939.ps:=p_frame.can_j1939.ps;
+  v_CAN_frame_j1939mod.can_j1939.sa:=p_frame.can_j1939.sa;
+  if (p_frame.can_j1939.pf == 'EE'O)
+  {
+    if (p_frame.can_j1939.ps == 'D8'O)  { 
+      v_CAN_frame_j1939mod.can_j1939.comp := p_frame.can_j1939.pf&p_frame.can_j1939.ps&'00'O;
+    } else if (p_frame.can_j1939.ps == 'FF'O) {
+      if (p_frame.can_j1939.sa == 'FE'O) {
+        v_CAN_frame_j1939mod.can_j1939.comp := p_frame.can_j1939.pf&p_frame.can_j1939.ps&p_frame.can_j1939.sa
+      } else {//??
+        v_CAN_frame_j1939mod.can_j1939.comp:=p_frame.can_j1939.pf&'0000'O;
+      }
+    } else {//?? 
+      v_CAN_frame_j1939mod.can_j1939.comp:=p_frame.can_j1939.pf&'0000'O;
+    } 
+  } else {
+    v_CAN_frame_j1939mod.can_j1939.comp := p_frame.can_j1939.pf&'0000'O;
+  }
+  //log("v_CAN_frame_j1939mod  :",v_CAN_frame_j1939mod)
+  return v_CAN_frame_j1939mod;
+}
+
+
+
+//---------------------------------------------------------------------------
+function f_encode_CAN_frame_j1939(in CAN_frame_j1939 pdu) return octetstring 
+//---------------------------------------------------------------------------
+{
+
+  return f_remove_aux_hdr(encode_CAN_frame_j1939mod(f_map_frame2mod(pdu)))
+
+
+}
+//---------------------------------------------------------------------------
+function f_decode_CAN_frame_j1939(in octetstring data) return CAN_frame_j1939
+//---------------------------------------------------------------------------
+{
+
+  return f_map_mod2frame(decode_CAN_frame_j1939mod(f_insert_aux_hdr(data)))
+
+
+}
+
+
+} with { encode "RAW" } 

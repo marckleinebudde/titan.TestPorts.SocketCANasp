@@ -1,0 +1,15 @@
+module J1939 {
+import from General_Types all;
+
+type record CAN_identifier {
+BIT3 priority,
+BIT1 reseved, 
+BIT1 datapage, 
+OCT1 pduformat,
+OCT1 destinationAddress,
+OCT1 sourceAddress
+}
+
+type OCT3 PGN
+
+}

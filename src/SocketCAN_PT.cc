@@ -12,8 +12,9 @@
 //  File:               SocketCAN_PT.cc
 //  Description:        SocketCAN_PT test port source
 //
-
+// Revision R1A
 #include "SocketCAN_PT.hh"
+#include "SocketCAN_PortType.hh"
 
 #include <Addfunc.hh>
 #include <Bitstring.hh>
@@ -45,9 +46,12 @@ struct bcm_msg_head;
 struct can_frame;
 struct canfd_frame;
 
+
 #define DEFAULT_NUM_SOCK          10
 #define BCM_FRAME_BUFFER_SIZE    256
 #define BCM_FRAME_FLAGS_SIZE      32 // size of SocketCAN_bcm_frame in Bit
+#define ISOTP_RECIEVE_BUFSIZE   5000
+
 
 // workaround, as some of those below may not yet be defined in "linux/can/raw.h":
 #define CAN_RAW_FILTER            1 /* set 0 .. n can_filter(s)          */
@@ -56,8 +60,6 @@ struct canfd_frame;
 #define CAN_RAW_RECV_OWN_MSGS     4 /* receive my own msgs (default:off) */
 #define CAN_RAW_FD_FRAMES         5 /* allow CAN FD frames (default:off) */
 #define CAN_RAW_JOIN_FILTERS      6 /* all filters must match to trigger */
-
-
 
 // workaround, as not yet defined in all versions of "linux/Can.h":
 #ifndef CAN_MAX_DLEN
@@ -68,7 +70,6 @@ struct canfd_frame;
 #ifndef	CAN_MTU
 #define CAN_MTU		(sizeof(struct can_frame))
 #endif  //CANFD_MTU
-
 
 // workaround, as canfd not defined in some older kernel versions
 // and thus canfd frames can not be used for data transfer between 
@@ -150,6 +151,31 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 		if ((sock == sock_list[a].fd)
 				and (sock_list[a].status != SOCKET_NOT_ALLOCATED)) {
 			switch (sock_list[a].protocol_family) {
+			case SocketCAN__PortType::SocketCAN__PT_PROVIDER::SOCKET_PROTOCOL_CAN_ISOTP: {
+				SocketCAN__Types::SocketCAN__receive__isotp__pdu parameters;
+
+				unsigned char msg[ISOTP_RECIEVE_BUFSIZE];
+
+				int nbytes = 0;
+				struct sockaddr_can addr;
+				socklen_t addr_len = sizeof(addr);
+				//ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
+				// struct sockaddr *src_addr, socklen_t *addrlen);
+				nbytes = recvfrom(sock, msg, ISOTP_RECIEVE_BUFSIZE, 0,
+						(struct sockaddr*) &addr, &addr_len);
+
+				//nbytes = read(sock, msg, ISOTP_RECIEVE_BUFSIZE);
+				if(nbytes > 0 && nbytes < ISOTP_RECIEVE_BUFSIZE) {
+					struct ifreq ifr;
+					ifr.ifr_ifindex = addr.can_ifindex;
+					parameters.ifr().if__index() = ifr.ifr_ifindex;
+					parameters.ifr().if__name() = ifr.ifr_name;
+					parameters.id() = a;
+					parameters.pdu() = OCTETSTRING(nbytes, msg);
+					incoming_message(parameters);
+				}
+			}
+			break;
 			case SocketCAN__PortType::SocketCAN__PT_PROVIDER::SOCKET_PROTOCOL_CAN_RAW: {
 				SocketCAN__Types::SocketCAN__receive__CAN__or__CAN__FD__frame parameters;
 
@@ -182,11 +208,11 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 					close(sock);
 				} else
 
-				if ((nbytes == CAN_MTU) 
+				if ((nbytes == CAN_MTU)
 #ifdef	CANFD_FRAME_STRUCT_DEFINED
-                                    or (nbytes == CANFD_MTU)
+						or (nbytes == CANFD_MTU)
 #endif  //CANFD_FRAME_STRUCT_DEFINED
-                                ){
+						) {
 					// A CAN Frame has been received. However use the struct canfd_frame to access it.
 					// As it is a CAN frame, the flags field contains invalid data and the can_dlc field
 					// is here called len as in CAN FD.
@@ -235,7 +261,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 #ifdef CANFD_FRAME_STRUCT_DEFINED
 					const INTEGER len = frame.len;
 #else  //CANFD_FRAME_STRUCT_DEFINED
-                    const INTEGER len = frame.can_dlc;
+					const INTEGER len = frame.can_dlc;
 #endif //CANFD_FRAME_STRUCT_DEFINED
 					// frame type specific part:
 					if (nbytes == CAN_MTU) {
@@ -244,7 +270,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 								parameters.frame().can__frame();
 						log(
 								"Received a CAN frame from interface %s of %d bytes and with payload length %d",
-								ifr.ifr_name, nbytes, (int)len);
+								ifr.ifr_name, nbytes, (int) len);
 						parameters.ifr().if__index() = ifr.ifr_ifindex;
 						parameters.ifr().if__name() = ifr.ifr_name;
 						parameters.id() = a;
@@ -256,7 +282,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 								parameters.frame().canfd__frame();
 						log(
 								"Received a CAN FD frame from interface %s of %d bytes and with payload length %d",
-								ifr.ifr_name, nbytes, (int)len);
+								ifr.ifr_name, nbytes, (int) len);
 						frameref.can__id() = int2oct(can_id, 4);
 #ifdef CANFD_FRAME_STRUCT_DEFINED
 						frameref.can__flags() = BITSTRING(
@@ -324,7 +350,7 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 					parameters.frame().opcode() = int2oct(opcode, 4);
 					parameters.frame().flags() = BITSTRING(
 							int2bit(INTEGER(msg_head_flags),
-									BCM_FRAME_FLAGS_SIZE));
+							BCM_FRAME_FLAGS_SIZE));
 					parameters.frame().count() = bcm_msg.msg_head.count;
 					parameters.frame().ival1().tv__sec() =
 							bcm_msg.msg_head.ival1.tv_sec;
@@ -376,12 +402,14 @@ void SocketCAN__PT_PROVIDER::Handle_Fd_Event_Readable(int sock) {
 #endif	//CANFD_FRAME_STRUCT_DEFINED   // struct canfd_frame is supported
 							// Handle legacy CAN frames
 							if (len > CAN_MAX_DLEN) {
-								TTCN_error("Writing data: CAN pdu size too large\n");
+								TTCN_error(
+										"Writing data: CAN pdu size too large\n");
 								len = CAN_MAX_DLEN;
 							};
 							INTEGER can_id;
 							can_id.set_long_long_val(bcm_msg.frame[i].can_id);
-							parameters.frame().frames().can__frame()[i].can__id() =	int2oct(can_id, 4);
+							parameters.frame().frames().can__frame()[i].can__id() =
+									int2oct(can_id, 4);
 							parameters.frame().frames().can__frame()[i].can__pdu() =
 									OCTETSTRING(len,
 											(const unsigned char*) &(bcm_msg.frame[i].data));
@@ -631,8 +659,21 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 			sock = sock_list[cn].fd;
 
 			addr.can_family = AF_CAN;
-			addr.can_ifindex = send_par.if__index();
 
+			SocketCAN__Types::SocketCAN__connectu connectu = send_par.connectu();
+			switch (connectu.get_selection()) {
+			case SocketCAN__Types::SocketCAN__connectu::ALT_bcm:
+				addr.can_ifindex = connectu.bcm().if__index();
+				sock_list[cn].protocol_family
+						= SocketCAN__PortType::SocketCAN__PT_PROVIDER::SOCKET_PROTOCOL_CAN_BCM;
+				break;
+			default:
+				TTCN_error(
+						"connectu union selection does not exist on socket %d: \n",
+						sock);
+				break;
+			}
+			log("Connecting socket: %d with index: %d", sock, addr.can_ifindex);
 			//extern int connect (int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len);
 			res = connect(sock, (struct sockaddr *) &addr, sizeof(addr));
 			if (res != 0) {
@@ -688,10 +729,32 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 		if (sock_list[cn].protocol_family
 				== SocketCAN__PortType::SocketCAN__PT_PROVIDER::SOCKET_NO_PROTOCOL) {
 			int if_index;
+			SocketCAN__PortType::SocketCAN__PT_PROVIDER::socket_protocol_family_enum protocol_family;
 			sock = sock_list[cn].fd;
 
 			addr.can_family = AF_CAN;
-			if_index = send_par.if__index();
+
+			SocketCAN__Types::SocketCAN__bindu bindu = send_par.bindu();
+
+			switch (bindu.get_selection()) {
+			case SocketCAN__Types::SocketCAN__bindu::ALT_raw:
+				if_index = bindu.raw().if__index();
+				protocol_family
+						= SocketCAN__PortType::SocketCAN__PT_PROVIDER::SOCKET_PROTOCOL_CAN_RAW;
+				break;
+			case SocketCAN__Types::SocketCAN__bindu::ALT_isotp:
+				if_index = bindu.isotp().if__index();
+				addr.can_addr.tp.rx_id = oct2int(bindu.isotp().rx__can__id());
+				addr.can_addr.tp.tx_id = oct2int(bindu.isotp().tx__can__id());
+				protocol_family
+						= SocketCAN__PortType::SocketCAN__PT_PROVIDER::SOCKET_PROTOCOL_CAN_ISOTP;
+				break;
+			default:
+				TTCN_error(
+						"bindu union selection does not exist on socket %d: \n",
+						sock);
+				break;
+			}
 			addr.can_ifindex = if_index;
 			log("Binding socket: %d with index: %d", sock, if_index);
 			res = bind(sock, (struct sockaddr *) &addr, sizeof(addr));
@@ -703,8 +766,7 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 				result.result().err() = errno;
 			} else {
 				log("Binding socket %d was successful", sock);
-				sock_list[cn].protocol_family =
-						SocketCAN__PortType::SocketCAN__PT_PROVIDER::SOCKET_PROTOCOL_CAN_RAW;
+				sock_list[cn].protocol_family = protocol_family ;
 				result.result().result__code() =
 						SocketCAN__Types::SocketCAN__Result__code::SocketCAN__SUCCESS;
 				result.result().err() = OMIT_VALUE;
@@ -862,80 +924,81 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 			}
 				break;
 #ifdef RAW_CANFD_SUPPORT
-				case SocketCAN__Types::SocketCAN__CAN__or__CAN__FD__frame::ALT_canfd__frame: {
-					struct canfd_frame fd_frame;
+			case SocketCAN__Types::SocketCAN__CAN__or__CAN__FD__frame::ALT_canfd__frame: {
+				struct canfd_frame fd_frame;
 
-					log("SocketCAN: Sending CAN FD frame)");
-					logOctet(" to can id: ",
-							send_par.frame().canfd__frame().can__id());
-					logBitstring("with flags: ",
-							send_par.frame().canfd__frame().can__flags());
-					logOctet("containing data: ",
-							send_par.frame().canfd__frame().can__pdu());
+				log("SocketCAN: Sending CAN FD frame)");
+				logOctet(" to can id: ",
+						send_par.frame().canfd__frame().can__id());
+				logBitstring("with flags: ",
+						send_par.frame().canfd__frame().can__flags());
+				logOctet("containing data: ",
+						send_par.frame().canfd__frame().can__pdu());
 
-					size_t len =
-					send_par.frame().canfd__frame().can__pdu().lengthof();
-					fd_frame.can_id = oct2int(send_par.frame().canfd__frame().can__id());
-					memcpy(fd_frame.data,
-							send_par.frame().canfd__frame().can__pdu(), len);
-					fd_frame.len = len;
+				size_t len =
+						send_par.frame().canfd__frame().can__pdu().lengthof();
+				fd_frame.can_id = oct2int(
+						send_par.frame().canfd__frame().can__id());
+				memcpy(fd_frame.data,
+						send_par.frame().canfd__frame().can__pdu(), len);
+				fd_frame.len = len;
 
-					nrOfBytestoSend = sizeof(fd_frame);
-					if (send_par.ifu().is_present()) {
+				nrOfBytestoSend = sizeof(fd_frame);
+				if (send_par.ifu().is_present()) {
 
-						nrOfBytesSent = sendto(sock, &fd_frame, nrOfBytestoSend, 0,
-								(struct sockaddr*) &addr, sizeof(addr));
-						if (nrOfBytesSent < 0) {
-							TTCN_error(
-									"SocketCAN FD send with sendto() error while trying to send %d bytes",
-									nrOfBytestoSend);
-							result.result().result__code() =
-							SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
-							result.result().err() = errno;
-							result.result().err__text() =
-							"SocketCAN FD send with sendto() error";
-						} else {
-							log(
-									"SocketCAN: Sent CAN FD frame with sendto() of size %d",
-									nrOfBytesSent);
-							result.result().result__code() =
-							SocketCAN__Types::SocketCAN__Result__code::SocketCAN__SUCCESS;
-							result.result().err() = OMIT_VALUE;
-							result.result().err__text() = OMIT_VALUE;
-						}
+					nrOfBytesSent = sendto(sock, &fd_frame, nrOfBytestoSend, 0,
+							(struct sockaddr*) &addr, sizeof(addr));
+					if (nrOfBytesSent < 0) {
+						TTCN_error(
+								"SocketCAN FD send with sendto() error while trying to send %d bytes",
+								nrOfBytestoSend);
+						result.result().result__code() =
+								SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
+						result.result().err() = errno;
+						result.result().err__text() =
+								"SocketCAN FD send with sendto() error";
 					} else {
-						nrOfBytesSent = send(sock, &fd_frame, nrOfBytestoSend, 0);
-						if (nrOfBytesSent < 0) {
-							TTCN_error(
-									"SocketCAN FD send with send() error while trying to send %d bytes",
-									nrOfBytestoSend);
-							result.result().result__code() =
-							SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
-							result.result().err() = errno;
-							result.result().err__text() =
-							"SocketCAN FD send with send() error";
-						} else {
-							log(
-									"SocketCAN: Sent CAN FD frame with send() of size %d",
-									nrOfBytesSent);
-							result.result().result__code() =
-							SocketCAN__Types::SocketCAN__Result__code::SocketCAN__SUCCESS;
-							result.result().err() = OMIT_VALUE;
-							result.result().err__text() = OMIT_VALUE;
-						}
+						log(
+								"SocketCAN: Sent CAN FD frame with sendto() of size %d",
+								nrOfBytesSent);
+						result.result().result__code() =
+								SocketCAN__Types::SocketCAN__Result__code::SocketCAN__SUCCESS;
+						result.result().err() = OMIT_VALUE;
+						result.result().err__text() = OMIT_VALUE;
+					}
+				} else {
+					nrOfBytesSent = send(sock, &fd_frame, nrOfBytestoSend, 0);
+					if (nrOfBytesSent < 0) {
+						TTCN_error(
+								"SocketCAN FD send with send() error while trying to send %d bytes",
+								nrOfBytestoSend);
+						result.result().result__code() =
+								SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
+						result.result().err() = errno;
+						result.result().err__text() =
+								"SocketCAN FD send with send() error";
+					} else {
+						log(
+								"SocketCAN: Sent CAN FD frame with send() of size %d",
+								nrOfBytesSent);
+						result.result().result__code() =
+								SocketCAN__Types::SocketCAN__Result__code::SocketCAN__SUCCESS;
+						result.result().err() = OMIT_VALUE;
+						result.result().err__text() = OMIT_VALUE;
 					}
 				}
+			}
 				break;
 #else  // RAW_CANFD_SUPPORT
-			case SocketCAN__Types::SocketCAN__CAN__or__CAN__FD__frame::ALT_canfd__frame: {
-				TTCN_error(
-						"SocketCAN: CAN FD is not supported by your current kernel error");
-				result.result().result__code() =
-						SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
-				result.result().err() = OMIT_VALUE;
-				result.result().err__text() =
-						"SocketCAN: CAN FD is not supported by your current kernel error";
-			}
+				case SocketCAN__Types::SocketCAN__CAN__or__CAN__FD__frame::ALT_canfd__frame: {
+					TTCN_error(
+							"SocketCAN: CAN FD is not supported by your current kernel error");
+					result.result().result__code() =
+					SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
+					result.result().err() = OMIT_VALUE;
+					result.result().err__text() =
+					"SocketCAN: CAN FD is not supported by your current kernel error";
+				}
 				break;
 #endif // RAW_CANFD_SUPPORT
 
@@ -1125,115 +1188,115 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 		}
 			break;
 #ifdef BCM_CANFD_SUPPORT
-		case Bcm::SocketCAN__bcm__frame_frames::ALT_canfd__frame: {
-			int nrOfBytesSent = 0;
-			int nrOfBytestoSend = 0;
-			struct {
-				struct bcm_msg_head msg_head;
-				struct canfd_frame frame[BCM_FRAME_BUFFER_SIZE];
-			} bcm_msg;
+			case Bcm::SocketCAN__bcm__frame_frames::ALT_canfd__frame: {
+				int nrOfBytesSent = 0;
+				int nrOfBytestoSend = 0;
+				struct {
+					struct bcm_msg_head msg_head;
+					struct canfd_frame frame[BCM_FRAME_BUFFER_SIZE];
+				}bcm_msg;
 
-			const Bcm::SocketCAN__bcm__frame& bcm__tx__msg =
-					send_par.bcm__tx__msg();
-
-			unsigned int nframes =
-					bcm__tx__msg.frames().canfd__frame().lengthof();
-
-			if (nframes > BCM_FRAME_BUFFER_SIZE) {
-				TTCN_error(
-						"SocketCAN writing data: number of CAN FD frames too large: %d \n",
-						nframes);
-				result.result().result__code() =
-						SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
-				result.result().err() = errno;
-				result.result().err__text() =
-						"SocketCAN sending CAN FD data with write() failed, as more than BCM_FRAME_BUFFER_SIZE number of CAN FD frames to be sent";
-				TTCN_error(
-						"SocketCAN sending CAN FD data with write() failed, as more than BCM_FRAME_BUFFER_SIZE number of CAN FD frames to be sent");
-			} else {
 				const Bcm::SocketCAN__bcm__frame& bcm__tx__msg =
-						send_par.bcm__tx__msg();
+				send_par.bcm__tx__msg();
 
-				bcm_msg.msg_head.opcode = oct2int(bcm__tx__msg.opcode());
-				bcm_msg.msg_head.flags = bit2int(
-						send_par.bcm__tx__msg().flags());
-				bcm_msg.msg_head.count = bcm__tx__msg.count();
-				bcm_msg.msg_head.ival1.tv_sec = bcm__tx__msg.ival1().tv__sec();
-				bcm_msg.msg_head.ival1.tv_usec =
-						bcm__tx__msg.ival1().tv__usec();
-				bcm_msg.msg_head.ival2.tv_sec = bcm__tx__msg.ival2().tv__sec();
-				bcm_msg.msg_head.ival2.tv_usec =
-						bcm__tx__msg.ival2().tv__usec();
-				bcm_msg.msg_head.nframes = nframes;
+				unsigned int nframes =
+				bcm__tx__msg.frames().canfd__frame().lengthof();
 
-				log("SocketCAN: Sending BCM Message)");
-				logOctet(" opcode: ", bcm__tx__msg.opcode());
-				logBitstring(" flags: ", bcm__tx__msg.flags());
-				logInteger(" count: ", bcm__tx__msg.count());
-				logInteger(" ival1: ", bcm__tx__msg.ival1().tv__sec());
-				logInteger(" ival1: ", bcm__tx__msg.ival1().tv__usec());
-				logInteger(" ival2: ", bcm__tx__msg.ival2().tv__sec());
-				logInteger(" ival2: ", bcm__tx__msg.ival2().tv__usec());
-				logOctet(" can_id: ", send_par.bcm__tx__msg().can__id());
-				logInteger(" nframes: ", nframes);
-
-				for (unsigned int i = 0; i < nframes; i++) {
-					const Bcm::SocketCAN__bcm__frame_frames_canfd__frame& frame =
-							bcm__tx__msg.frames().canfd__frame();
-
-					bcm_msg.frame[i].can_id = oct2int(frame[i].can__id());
-					bcm_msg.frame[i].flags = bit2int(frame[i].can__flags());
-					unsigned int len = frame[i].can__pdu().lengthof();
-					if (len > CANFD_MAX_DLEN) {
-						TTCN_error("Writing data: CAN FD pdu size too large\n");
-						len = CANFD_MAX_DLEN;
-					};
-					log(" containing CAN FD frame:)");
-					logOctet("   can id: ", frame[i].can__id());
-					logInteger("   can len: ", len);
-
-					bcm_msg.frame[i].len = len;
-					for (unsigned int j = 0; j < len; j++) {
-						bcm_msg.frame[i].data[j] = oct2int(
-								frame[i].can__pdu()[j]);
-						logOctet("   data: ", frame[i].can__pdu()[j]);
-					}
-				}
-				// assuming that the structs within the structure are aligned cm_msg without passing
-				// BCM_write does not calculate unused fields from nframes to BCM_FRAME_BUFFER_SIZE
-				nrOfBytestoSend = sizeof(struct bcm_msg_head)
-						+ nframes * sizeof(struct canfd_frame);
-				nrOfBytesSent = write(sock, &bcm_msg, nrOfBytestoSend);
-
-				if (nrOfBytesSent < 0) {
+				if (nframes > BCM_FRAME_BUFFER_SIZE) {
+					TTCN_error(
+							"SocketCAN writing data: number of CAN FD frames too large: %d \n",
+							nframes);
 					result.result().result__code() =
-							SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
+					SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
 					result.result().err() = errno;
 					result.result().err__text() =
-							"SocketCAN sending CAN FD data with write() failed";
+					"SocketCAN sending CAN FD data with write() failed, as more than BCM_FRAME_BUFFER_SIZE number of CAN FD frames to be sent";
 					TTCN_error(
-							"SocketCAN sending CAN FD data with write() failed");
+							"SocketCAN sending CAN FD data with write() failed, as more than BCM_FRAME_BUFFER_SIZE number of CAN FD frames to be sent");
 				} else {
+					const Bcm::SocketCAN__bcm__frame& bcm__tx__msg =
+					send_par.bcm__tx__msg();
+
+					bcm_msg.msg_head.opcode = oct2int(bcm__tx__msg.opcode());
+					bcm_msg.msg_head.flags = bit2int(
+							send_par.bcm__tx__msg().flags());
+					bcm_msg.msg_head.count = bcm__tx__msg.count();
+					bcm_msg.msg_head.ival1.tv_sec = bcm__tx__msg.ival1().tv__sec();
+					bcm_msg.msg_head.ival1.tv_usec =
+					bcm__tx__msg.ival1().tv__usec();
+					bcm_msg.msg_head.ival2.tv_sec = bcm__tx__msg.ival2().tv__sec();
+					bcm_msg.msg_head.ival2.tv_usec =
+					bcm__tx__msg.ival2().tv__usec();
+					bcm_msg.msg_head.nframes = nframes;
+
+					log("SocketCAN: Sending BCM Message)");
+					logOctet(" opcode: ", bcm__tx__msg.opcode());
+					logBitstring(" flags: ", bcm__tx__msg.flags());
+					logInteger(" count: ", bcm__tx__msg.count());
+					logInteger(" ival1: ", bcm__tx__msg.ival1().tv__sec());
+					logInteger(" ival1: ", bcm__tx__msg.ival1().tv__usec());
+					logInteger(" ival2: ", bcm__tx__msg.ival2().tv__sec());
+					logInteger(" ival2: ", bcm__tx__msg.ival2().tv__usec());
+					logOctet(" can_id: ", send_par.bcm__tx__msg().can__id());
+					logInteger(" nframes: ", nframes);
+
+					for (unsigned int i = 0; i < nframes; i++) {
+						const Bcm::SocketCAN__bcm__frame_frames_canfd__frame& frame =
+						bcm__tx__msg.frames().canfd__frame();
+
+						bcm_msg.frame[i].can_id = oct2int(frame[i].can__id());
+						bcm_msg.frame[i].flags = bit2int(frame[i].can__flags());
+						unsigned int len = frame[i].can__pdu().lengthof();
+						if (len > CANFD_MAX_DLEN) {
+							TTCN_error("Writing data: CAN FD pdu size too large\n");
+							len = CANFD_MAX_DLEN;
+						};
+						log(" containing CAN FD frame:)");
+						logOctet("   can id: ", frame[i].can__id());
+						logInteger("   can len: ", len);
+
+						bcm_msg.frame[i].len = len;
+						for (unsigned int j = 0; j < len; j++) {
+							bcm_msg.frame[i].data[j] = oct2int(
+									frame[i].can__pdu()[j]);
+							logOctet("   data: ", frame[i].can__pdu()[j]);
+						}
+					}
+					// assuming that the structs within the structure are aligned cm_msg without passing
+					// BCM_write does not calculate unused fields from nframes to BCM_FRAME_BUFFER_SIZE
+					nrOfBytestoSend = sizeof(struct bcm_msg_head)
+					+ nframes * sizeof(struct canfd_frame);
+					nrOfBytesSent = write(sock, &bcm_msg, nrOfBytestoSend);
+
+					if (nrOfBytesSent < 0) {
+						result.result().result__code() =
+						SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
+						result.result().err() = errno;
+						result.result().err__text() =
+						"SocketCAN sending CAN FD data with write() failed";
+						TTCN_error(
+								"SocketCAN sending CAN FD data with write() failed");
+					} else {
+						result.result().result__code() =
+						SocketCAN__Types::SocketCAN__Result__code::SocketCAN__SUCCESS;
+						result.result().err() = OMIT_VALUE;
+						result.result().err__text() = OMIT_VALUE;
+					}
+				}
+
+				log("Nr of bytes sent = %d", nrOfBytesSent);
+
+				if (nrOfBytesSent != nrOfBytestoSend) {
+					TTCN_error(
+							"SocketCAN CAN fd frame write failed: %d bytes were sent instead of %d",
+							nrOfBytesSent, nrOfBytestoSend);
 					result.result().result__code() =
-							SocketCAN__Types::SocketCAN__Result__code::SocketCAN__SUCCESS;
+					SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
 					result.result().err() = OMIT_VALUE;
-					result.result().err__text() = OMIT_VALUE;
+					result.result().err__text() =
+					"SocketCAN write failed as wrong number of bytes have been written";
 				}
 			}
-
-			log("Nr of bytes sent = %d", nrOfBytesSent);
-
-			if (nrOfBytesSent != nrOfBytestoSend) {
-				TTCN_error(
-						"SocketCAN CAN fd frame write failed: %d bytes were sent instead of %d",
-						nrOfBytesSent, nrOfBytestoSend);
-				result.result().result__code() =
-						SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
-				result.result().err() = OMIT_VALUE;
-				result.result().err__text() =
-						"SocketCAN write failed as wrong number of bytes have been written";
-			}
-		}
 			break;
 #endif //BCM_CANFD_SUPPORT
 
@@ -1259,6 +1322,65 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 	incoming_message(result);
 	log(
 			"leaving SocketCAN__PT_PROVIDER::outgoing_send(SocketCAN__write__data)");
+}
+
+void SocketCAN__PT_PROVIDER::outgoing_send(
+		const SocketCAN__Types::SocketCAN__write__isotp& send_par) {
+	log(
+			"entering SocketCAN__PT_PROVIDER::outgoing_send(SocketCAN__write__isotp)");
+
+	SocketCAN__Types::SocketCAN__write__isotp__result result;
+	int sock;
+	int cn = send_par.id();
+
+	if ((cn < sock_list_length)
+			and (sock_list[cn].protocol_family
+					== SocketCAN__PortType::SocketCAN__PT_PROVIDER::SOCKET_PROTOCOL_CAN_ISOTP)
+			and (sock_list[cn].status == SOCKET_OPEN)) {
+		sock = sock_list[cn].fd;
+
+		int nrOfBytesSent = 0;
+		int nrOfBytestoSend = send_par.pdu().lengthof();
+
+		logOctet("Writing ISOTP data on socket: ", send_par.pdu());
+		nrOfBytesSent = write(sock, send_par.pdu(), nrOfBytestoSend);
+		log(
+				"Written to ISOTP %d bytes data of the expected %d bytes on socket %d: ",
+				nrOfBytesSent, nrOfBytestoSend, sock);
+		if (nrOfBytesSent != nrOfBytestoSend) {
+			TTCN_warning(
+					"SocketCAN write isotp has written %d bytes, which are fewer than expected %d bytes to socket: %d \n",
+					nrOfBytesSent, nrOfBytestoSend, sock);
+		}
+		if (nrOfBytesSent < 0) {
+			TTCN_error("SocketCAN write isotp failed with error code %d:\n",
+			errno);
+			result.result().result__code() =
+					SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
+			result.result().err() = errno;
+			result.result().err__text() = "SocketCAN write isotp failed";
+		} else {
+			log(
+					"SocketCAN: write isotp successful on socket %d",
+					sock);
+			result.result().result__code() =
+					SocketCAN__Types::SocketCAN__Result__code::SocketCAN__SUCCESS;
+			result.result().err() = OMIT_VALUE;
+			result.result().err__text() = OMIT_VALUE;
+		}
+	} else {
+		TTCN_error(
+				"SocketCAN write isotp failed due to unknown socket reference: %d with protocol family %d and status %d\n",
+				cn, sock_list[cn].protocol_family, sock_list[cn].status);
+		result.result().result__code() =
+				SocketCAN__Types::SocketCAN__Result__code::SocketCAN__ERROR;
+		result.result().err() = OMIT_VALUE;
+		result.result().err__text() =
+				"SocketCAN write isotp failed due to unknown socket reference";
+	}
+	incoming_message(result);
+	log(
+			"leaving SocketCAN__PT_PROVIDER::outgoing_send(SocketCAN__write__isotp)");
 }
 
 void SocketCAN__PT_PROVIDER::outgoing_send(
@@ -1290,10 +1412,10 @@ void SocketCAN__PT_PROVIDER::outgoing_send(
 				res = setsockopt(sock, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
 			} else {
 				for (std::size_t i = 0; i < rfilter_size; i++) {
-					rfilter[i].can_id =
-							oct2int(send_par.command().rfilter()[i].can__id());
-					rfilter[i].can_mask =
-							oct2int(send_par.command().rfilter()[i].can__mask());
+					rfilter[i].can_id = oct2int(
+							send_par.command().rfilter()[i].can__id());
+					rfilter[i].can_mask = oct2int(
+							send_par.command().rfilter()[i].can__mask());
 				};
 				res = setsockopt(sock, SOL_CAN_RAW, CAN_RAW_FILTER, &rfilter,
 						sizeof(rfilter));
