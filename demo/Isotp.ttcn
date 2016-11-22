@@ -13,7 +13,7 @@
 //  File:               Isotp.ttcn
 //  Description:        Isotp base 
 //
-// Revision R1A
+
 
 module Isotp {
 

@@ -11,7 +11,7 @@
 //  File:               Isobus.ttcn
 //  Description:        Encoder / Decoder for Isobus message frames
 //
-// Revision R1A
+
 
 module Isobus {
 import from General_Types all
@@ -30,11 +30,6 @@ external function encode_CAN_frame_j1939mod(in CAN_frame_j1939mod pdu) return oc
 with { extension "prototype(convert) encode(RAW)" }
 external function decode_CAN_frame_j1939mod(in octetstring data) return CAN_frame_j1939mod
 with { extension "prototype(convert) decode(RAW)" }
-
-
-
-
-
 
 const octetstring ISOBUS_PRIORITY_MASK    := '1C000000'O;
 const octetstring ISOBUS_RESERVED_MASK    := '02000000'O;
@@ -95,15 +90,7 @@ with { variant "" }
 type record CAN_frame_j1939 {
   J1939               can_j1939,
   AnyIsoBusPdu        can_pdu 
-}with {
-  variant (can_pdu) "CROSSTAG( 
-  vt2ecu,                   can_j1939.pf = 'E6'O;  //230
-  ecu2vt,                   can_j1939.pf = 'E7'O;  //231
-  requestForAddressClaimed, can_j1939.pf = 'EA'O;  //234
-  cannotClaimSourceAddress, {can_j1939.pf = 'EE'O, can_j1939.ps = 'FF'O, can_j1939.sa = 'FE'O}; //238 all and conjuction needed!!!!!!
-  addressClaimed,           {can_j1939.pf = 'EE'O, can_j1939.ps = 'FF'O};  //238 all and conjuction needed!!!!!!
-  commandedAddress,         {can_j1939.pf = 'FE'O, can_j1939.ps = 'D8'O})" //254 all and conjuction needed!!!!!!
-}
+}with { variant "" }
 
 
 type record CAN_frame_j1939mod {
@@ -153,32 +140,19 @@ function can2j1939frame(CAN_frame p_can_frame) return CAN_frame_j1939 {
 }
 
 function canid2j1939(in CAN_id p_can_id) return J1939 {
-  var bitstring v_can_id_bitstring
-  var Priority v_priority
-  var BIT1 v_reserved    // BIT1
-  var BIT1 v_datapage    // BIT1
-  var OCT1 v_pduformat   // OCT1
-  var OCT1 v_pduspecifc  // OCT1
-  var OCT1 v_sourceaddress  // OCT1
-  var PGN  v_pgn
+//--------------------------------------------------------------------------------------- 
+
+  var bitstring v_can_id_bitstring:= oct2bit(p_can_id)
   var J1939 v_j1939
 
-  v_can_id_bitstring := oct2bit(p_can_id)
-  v_priority      := substr(v_can_id_bitstring, 3, 3)
-  v_reserved      := v_can_id_bitstring[6]
-  v_datapage      := v_can_id_bitstring[7]
-  v_pduformat     := p_can_id[1] //(p_can_id and4b ISOBUS_PDUFORMAT_MASK) >> 2   // shift 16 bits = 2 octets
-  v_pduspecifc    := p_can_id[2] // (p_can_id and4b ISOBUS_PDUSPECIFIC_MASK) >> 1 // shift  8 bits = 1 octet
-  v_sourceaddress := p_can_id[3] //(p_can_id and4b ISOBUS_SOURCEADDRESS_MASK)
-
-  if (oct2int(v_pduformat) < 240) {
-    v_pgn := bit2int(v_reserved)*2*256*256 + bit2int(v_datapage)*256 *256 + oct2int(v_pduformat)*256
-
-  } else  {
-    v_pgn := bit2int(v_reserved)*2*256*256 + bit2int(v_datapage)*256 *256 + oct2int(v_pduformat)*256 + oct2int(v_pduspecifc)
-  }
-  v_j1939 := {/*pgn :=  v_pgn, */prio := v_priority, res := v_reserved, dp := v_datapage, pf := v_pduformat, ps := v_pduspecifc, sa := v_sourceaddress}
-  return v_j1939
+  v_j1939.prio :=substr(v_can_id_bitstring, 0, 6); //3 ,3
+  v_j1939.res  :=v_can_id_bitstring[6];
+  v_j1939.dp   :=v_can_id_bitstring[7];
+  v_j1939.pf   :=p_can_id[1];//(p_can_id and4b ISOBUS_PDUFORMAT_MASK) >> 2   // shift 16 bits = 2 octets
+  v_j1939.ps   :=p_can_id[2];// (p_can_id and4b ISOBUS_PDUSPECIFIC_MASK) >> 1 // shift  8 bits = 1 octet
+  v_j1939.sa   :=p_can_id[3];//(p_can_id and4b ISOBUS_SOURCEADDRESS_MASK)
+  
+   return v_j1939
 }
 
 //********************************************************************************-

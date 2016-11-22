@@ -11,7 +11,6 @@
 //  File:               SocketCAN_BCM_test.ttcn
 //  Description:        SocketCAN testcases for CAN_BCM frames
 //
-// Revision R1A
 
 
 module SocketCAN_BCM_test {
