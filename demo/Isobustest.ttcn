@@ -11,6 +11,7 @@
 //  File:               Isobustest.ttcn
 //  Description:        Encoder / Decoder for Isobus message frames
 //
+// Revision R1A
 
 module Isobustest {
 
@@ -22,6 +23,7 @@ import from SocketCAN_PortType all
 import from SocketCAN_Templates all
 import from Can all
 import from Isobus all
+import from IsobusMessageTypes all
 import from Isobus_Templates all
 
 
@@ -70,17 +72,32 @@ type component PTC_isobus_CT
   timer T0:= 0.2
 }
 
+const integer MAX_CONNECTIONS := 65535
+
+type record length (0..MAX_CONNECTIONS) of PTC2_CT OpenConnections
+type record length (0..MAX_CONNECTIONS) of boolean OpenConnectionsFlags
+
 type component PTC1_CT
 {
   port Isobus_PT                      pt_isobus
   //variables
+  var OpenConnections                 openConnections
+  var OpenConnectionsFlags            openConnectionsFlags
   //timers
   timer T1:= 0.2
 
 }
 type component PTC2_CT
 {
+  port Isobus_PT                      pt_isobus
   //variables
+  var octetstring receivedUnacknowledgedData
+  var INT2        msgSizeInBytes
+  var INT2        receivedUnacknowledgedMsgSizeInBytes
+  var INT1        nextExpectedPacketNumber
+  var PGN         pgnOfMultiPacketMessage
+  var OCT1        ps, sa
+  var CAN_id      tp_dt_can_id
   //timers
   timer T2:= 0.2
 }
@@ -234,13 +251,13 @@ function f_behaviour_isobus(in PTC1_CT v_ptc1)  runs on PTC_isobus_CT
   {
     //var SocketCAN_socket_result v_result_socketcan
     var SocketCAN_receive_CAN_or_CAN_FD_frame v_result_socketcan
-    var CAN_frame_j1939 v_result_can_frame_j1939
     //T0.start;
 
     alt 
     {
       [] pt_socketCAN.receive(a_SocketCAN_receive_CAN_frame(v_socket_id, t_CAN_EFF_FLAG, ?)) -> value v_result_socketcan
-      {log("SocketCan:Expected frame received", v_result_socketcan)
+      {
+        //log("SocketCan:Expected frame received", v_result_socketcan)
         // it is assumed that no can fd frames are received here
         if(ischosen(v_result_socketcan.frame.can_frame)){
           var CAN_frame_j1939  v_CAN_frame_j1939 := can2j1939frame(v_result_socketcan.frame.can_frame)
@@ -248,10 +265,6 @@ function f_behaviour_isobus(in PTC1_CT v_ptc1)  runs on PTC_isobus_CT
         } else {
           setverdict(inconc, "reception of canfd frame not expected") 
         }
-      }
-      [] pt_socketCAN.receive(?) -> value v_result_socketcan
-      {log("SocketCan:Unexpected frame received!", v_result_socketcan)
-        setverdict(fail)
       }
     }//endalt
   }
@@ -291,16 +304,253 @@ function  f_behaviour1_sync()  runs on PTC1_CT
   }
 }//endfunction  var boolean condition1
 
+function f_get_component (in OCT1 connectioninitiator, in OCT1 connectionresponder) runs on PTC1_CT return PTC2_CT {
 
+  var PTC2_CT v_PTC2
+
+  var integer index
+  index:= oct2int(connectioninitiator) + 256 * oct2int(connectionresponder)
+
+  if (openConnectionsFlags[index] == false){
+
+    v_PTC2 := PTC2_CT.create
+    v_PTC2.start(f_behaviour_connections()); 
+    openConnectionsFlags[index] := true
+    openConnections[index] := v_PTC2
+    connect(v_PTC2:pt_isobus, self:pt_isobus)
+  } else {
+    v_PTC2 := openConnections[index]
+  }
+  return v_PTC2
+}
+
+
+
+function  f_behaviour2_sync() runs on PTC1_CT
+{
+
+  var boolean condition1 := true
+  var CAN_frame_j1939 v_can_frame_j1939
+
+  // initialization
+
+  var integer i
+  for(i:=1;i<=MAX_CONNECTIONS; i:= i+1){
+    openConnectionsFlags[i] := false
+  }
+
+  //periodic reception
+
+
+
+
+  while (condition1)
+  {
+    //T1.start;
+
+    alt 
+    {
+
+      /*  []syncport.receive("halt") {
+      condition1:=false  } */
+      []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { requestToSend := ?}}}) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received requestToSend: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+
+        var PTC2_CT v_PTC2
+        v_PTC2 := f_get_component(v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps)
+        pt_isobus.send(v_can_frame_j1939) to v_PTC2
+      } 
+      []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { clearToSend := ?}}}) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received requestToSend: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.ps, v_can_frame_j1939.can_j1939.sa);
+
+        var PTC2_CT v_PTC2
+        v_PTC2 := f_get_component(v_can_frame_j1939.can_j1939.ps, v_can_frame_j1939.can_j1939.sa)
+        pt_isobus.send(v_can_frame_j1939) to v_PTC2
+      } 
+      []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { endOfMessageAcknowledgement := ?}}}) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received requestToSend: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.ps, v_can_frame_j1939.can_j1939.sa);
+
+        var PTC2_CT v_PTC2
+        v_PTC2 := f_get_component(v_can_frame_j1939.can_j1939.ps, v_can_frame_j1939.can_j1939.sa)
+        pt_isobus.send(v_can_frame_j1939) to v_PTC2
+      } 
+      []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { connectionAbort := ?}}}) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received requestToSend: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.ps, v_can_frame_j1939.can_j1939.sa);
+
+        var PTC2_CT v_PTC2
+        v_PTC2 := f_get_component(v_can_frame_j1939.can_j1939.ps, v_can_frame_j1939.can_j1939.sa)
+        pt_isobus.send(v_can_frame_j1939) to v_PTC2
+      } 
+      []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { broadcastAnnounce := ?}}}) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received requestToSend: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+
+        var PTC2_CT v_PTC2
+        v_PTC2 := f_get_component(v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps)
+        pt_isobus.send(v_can_frame_j1939) to v_PTC2
+      } 
+      []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_dt := ?}}) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received tp_ct: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+
+        var PTC2_CT v_PTC2
+        v_PTC2 := f_get_component(v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps)
+        pt_isobus.send(v_can_frame_j1939) to v_PTC2
+      } 
+      []pt_isobus.receive(CAN_frame_j1939:?) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received: ",  v_can_frame_j1939);
+      } 
+
+      //[]T1.timeout; 
+
+    }//endalt
+  }
+}//endfunction  var boolean condition1
+function  f_behaviour_connections() runs on PTC2_CT
+{
+
+  var boolean condition1 := true
+  var CAN_frame_j1939 v_can_frame_j1939
+
+  // initialization
+
+  //periodic reception
+
+
+
+
+  while (condition1)
+  {
+    //T1.start;
+
+    alt 
+    {
+
+      /*  []syncport.receive("halt") {
+      condition1:=false  } */
+      []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { requestToSend := ?}}}) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        msgSizeInBytes := v_can_frame_j1939.can_pdu.tp_cm.requestToSend.msgSizeInBytes
+        receivedUnacknowledgedData := ''O
+        receivedUnacknowledgedMsgSizeInBytes := 0
+        pgnOfMultiPacketMessage := v_can_frame_j1939.can_pdu.tp_cm.requestToSend.pgnOfMultiPacketMessage
+        ps := v_can_frame_j1939.can_j1939.ps
+        sa := v_can_frame_j1939.can_j1939.sa
+        //log incoming message 
+        log ("received requestToSend: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+        alt // connection open requested
+        {
+          []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { clearToSend := {ctrl := '11'O, 
+                    totalNumberOfPackets := ?,
+                    nextPacketNumber :=1, 
+                    reserved4 := ?,
+                    reserved5 := ?, 
+                    pgnOfMultiPacketMessage := ?}}}}) -> value v_can_frame_j1939 { 
+            //T1.stop; 
+            nextExpectedPacketNumber := v_can_frame_j1939.can_pdu.tp_cm.clearToSend.nextPacketNumber
+            //log incoming message 
+            log ("received clearToSend: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+            alt // connection open - receivig data
+            {
+              []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_dt := ?}}) -> value v_can_frame_j1939 { 
+                //T1.stop; 
+                if ((msgSizeInBytes - receivedUnacknowledgedMsgSizeInBytes) > 7) {
+                  tp_dt_can_id := j1939id2canid(v_can_frame_j1939.can_j1939) // actuallay it is only necessary to store it once
+                  receivedUnacknowledgedData := receivedUnacknowledgedData & v_can_frame_j1939.can_pdu.tp_dt.data
+                  receivedUnacknowledgedMsgSizeInBytes := receivedUnacknowledgedMsgSizeInBytes + 7
+                  nextExpectedPacketNumber := nextExpectedPacketNumber + 1 }
+                else {
+                  log("v_can_frame_j1939.can_j1939: ", v_can_frame_j1939.can_j1939)
+                  tp_dt_can_id := j1939id2canid(v_can_frame_j1939.can_j1939) // actuallay it is only necessary to store it once
+                  receivedUnacknowledgedData := receivedUnacknowledgedData & substr(v_can_frame_j1939.can_pdu.tp_dt.data
+                    ,0 , (msgSizeInBytes - receivedUnacknowledgedMsgSizeInBytes))
+                  nextExpectedPacketNumber := 0 
+                  receivedUnacknowledgedMsgSizeInBytes := msgSizeInBytes
+                }
+                //log incoming message 
+                log ("received tp_dt: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+                repeat
+              }
+              []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { clearToSend := ?}}}) -> value v_can_frame_j1939 { 
+                //T1.stop; 
+                //log incoming message 
+                log ("received clearToSend: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+                repeat
+              }
+              []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { endOfMessageAcknowledgement := ?}}}) -> value v_can_frame_j1939 { 
+                //T1.stop; 
+                //log incoming message 
+                log ("received endOfMessageAcknowledgement: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+                if (receivedUnacknowledgedMsgSizeInBytes == msgSizeInBytes) {
+                  var octetstring receivedData
+                  //var PGN pgn := v_can_frame_j1939.can_pdu.tp_cm.endOfMessageAcknowledgement.pgnOfMultiPacketMessage
+                  if (oct2int((int2oct(pgnOfMultiPacketMessage, 3) and4b '00FF00'O)>> 1 ) < 240) {
+                    log ("pgnOfMultiPacketMessage: ", pgnOfMultiPacketMessage, ", ", int2oct(pgnOfMultiPacketMessage, 3))
+                    log ("ps: ", ps)
+                    log ("sa: ", sa)
+                    receivedData := int2oct(oct2int((int2oct(pgnOfMultiPacketMessage, 3) and4b '03FFFF'O)>> 1 ), 2) & ps & sa & receivedUnacknowledgedData
+                  }
+                  else
+                  {
+                    log ("pgnOfMultiPacketMessage: ", pgnOfMultiPacketMessage, ", ", int2oct(pgnOfMultiPacketMessage, 3))
+                    log ("sa: ", sa)
+                    receivedData := (int2oct(pgnOfMultiPacketMessage, 3) and4b '03FFFF'O) & sa & receivedUnacknowledgedData
+                  }
+                  //var octetstring receivedData := (tp_dt_can_id and4b  '0003FFFF'O) & receivedUnacknowledgedData
+                  log("tp_dt_can_id: ", tp_dt_can_id)
+                  //var octetstring receivedData := tp_dt_can_id & receivedUnacknowledgedData
+                  //var octetstring receivedData := receivedUnacknowledgedData
+                  log ("received tp_dt frame with PGN: ",  receivedData);
+
+                  v_can_frame_j1939:=f_decode_CAN_frame_j1939(receivedData)
+                  log ("received tp_dt frame j1939: ",  v_can_frame_j1939);
+                }
+                else {
+                  log ("received incomplete message frame: ",  receivedUnacknowledgedData);
+                }
+              }
+            }
+          }
+          []pt_isobus.receive(CAN_frame_j1939:{can_j1939 := ?, can_pdu := {tp_cm := { connectionAbort := ?}}}) -> value v_can_frame_j1939 { 
+            //T1.stop; 
+            //log incoming message 
+            log ("received connectionAbort: ",  v_can_frame_j1939, v_can_frame_j1939.can_j1939.sa, v_can_frame_j1939.can_j1939.ps);
+          }
+        }
+
+
+      } 
+      []pt_isobus.receive(CAN_frame_j1939:?) -> value v_can_frame_j1939 { 
+        //T1.stop; 
+        //log incoming message 
+        //log ("received: ",  v_can_frame_j1939);
+      } 
+
+      //[]T1.timeout; 
+
+    }//endalt
+  }
+}//endfunction  var boolean condition1
 
 
 testcase tc_encdec() runs on MTC_CT
 
 {
 
-
-
-  template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000110'B, res := '0'B, dp := '1'B, pf := 'E9'O, ps := 'FD'O, sa := 'E6'O }, can_pdu := { addressClaimed := { name := 'A80056AAABBCC778'O }}}
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000110'B, res := '0'B, dp := '1'B, pf := 'E9'O, ps := 'FD'O, sa := 'E6'O },     
+  can_pdu := { addressClaimed := { name := { selfConfigurableAddressValue := '0'B, industryGroupValue := '011'B, deviceClassInstanceValue := '0001'B, deviceClassValue := '0000001'B, reserveValued := '0'B, functionValue := '00000011'B, functionInstanceValue := '00101'B, ecuInstancceValue := '110'B, manufacturerCodeValue := '10000000000'B, identityNumberBits := '101000010000101000000'B } }}}
   log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
   log("--------------------------------------------")
   log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
@@ -312,14 +562,14 @@ testcase tc_encdec() runs on MTC_CT
   log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_2))))
   log("--------------------------------------------")
 
-  template CAN_frame_j1939 t_CAN_frame_j1939_3 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := 'FD'O, sa := 'C0'O }, can_pdu := { cannotClaimSourceAddress := { name := '1122334455667788'O }}}
+  template CAN_frame_j1939 t_CAN_frame_j1939_3 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := 'FD'O, sa := 'C0'O }, can_pdu := { cannotClaimSourceAddress := { name := { selfConfigurableAddressValue := '0'B, industryGroupValue := '011'B, deviceClassInstanceValue := '0001'B, deviceClassValue := '0000001'B, reserveValued := '0'B, functionValue := '00000011'B, functionInstanceValue := '00101'B, ecuInstancceValue := '110'B, manufacturerCodeValue := '10000000000'B, identityNumberBits := '101000010000101000000'B } }}}
   log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_3)))
   log("--------------------------------------------")
   log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_3))))
   log("--------------------------------------------")
 
   template CAN_frame_j1939 t_CAN_frame_j1939_6 :=  { can_j1939 := { prio := '000110'B, res := '0'B, dp := '1'B, pf := 'E6'O , ps := 'FD'O, sa := '00'O }, can_pdu := { commandedAddress := {
-        name:='1122334455667788'O,
+        name := { selfConfigurableAddressValue := '0'B, industryGroupValue := '011'B, deviceClassInstanceValue := '0001'B, deviceClassValue := '0000001'B, reserveValued := '0'B, functionValue := '00000011'B, functionInstanceValue := '00101'B, ecuInstancceValue := '110'B, manufacturerCodeValue := '10000000000'B, identityNumberBits := '101000010000101000000'B },
         newSourceAddress:='AA'O
       } } }
   log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_6)))
@@ -372,11 +622,61 @@ testcase tc_encdec_ecu2vt_getMemoryReq_with_template_II() runs on MTC_CT // usin
   log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
 }
 
+testcase tc_encdec_ecu2vt_workingSetMaintenanceReq() runs on MTC_CT // using a template
+{
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := '00'O, sa := '00'O }, can_pdu := 
+    t_WorkingSetMaintenanceReq_pdu({
+        initiatingWorkingSetMaintenance := true,
+        reserved1 := false,
+        reserved2 := false,
+        reserved3 := false,
+        reserved4 := false,
+        reserved5 := false,
+        reserved6 := false,
+        reserved7 := false}, compliantWithVTVersion4)}
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+}
+
+
 testcase tc_dec_requestForAddressClaimed() runs on MTC_CT
 {
 
   var octetstring j1939_pdu
   j1939_pdu := '98EAFFFE00EE00'O
+
+  log(j1939_pdu)
+  log("--------------------------------------------")
+  log(f_decode_CAN_frame_j1939(j1939_pdu))
+  log("--------------------------------------------")
+}
+
+
+
+testcase tc_dec_largemessage() runs on MTC_CT
+{
+
+  var octetstring j1939_pdu
+                
+  j1939_pdu := '00E726F8B3DA590B0066696C6520736572766572'O
+  //  j1939_pdu := '03FE00F8FE2A66696C65207365727665722A3139373136392A2D2A'O
+  /*
+03FE00F82A66696C65207365727665722A3139373136392A2D2A
+03FE00262A6661726D20646973706C61792A3139373136392A2D2A
+03FE00F72A7461736B20636F6E74726F6C6C65722A3139373136392A2D2A
+03FE00FD2A6661726D20646973706C61792A3139373136392A2D2A
+01FD00F82D2A3139373136392A2D2A2D2A6E696E67757065782A2D2A
+01FD00262D2A3139373136392A2D2A2D2A6E696E67757065782A2D2A
+01FD00F72D2A3139373136392A2D2A2D2A6E696E67757065782A2D2A
+01FD00262D2A3139373136392A2D2A2D2A6E696E67757065782A2D2A
+01FD00FD2D2A3139373136392A2D2A2D2A6E696E67757065782A2D2A
+02FE00FD016661726D20646973706C617920312E33372E31362E3733352A
+02FE0026026661726D20646973706C617920312E33372E31362E3733352A69736F627573206C69627261727920312E32362E332E3932382A
+02FE00F8096E696E67757065782066696C6520736572766572207573657220696E74657266616365204E5820322E322E342E3237302A746F6F6C206C69627261727920322E34322E382E3834302A6C6F67206C69627261727920322E302E31312E3136342A636F6E66696775726174696F6E206C69627261727920312E31322E322E3139332A43414E20627573206861726477617265206C69627261727920312E31392E352E3139382A7365637572697479206C69627261727920312E31312E302E3332312A69736F627573206C69627261727920312E32362E332E3932382A69736F62757320636F6D6D6F6E206C69627261727920322E31322E302E3139332A66696C652073657276657220312E342E352E3235382A
+9CFE0DF8FE01FFFFFFFFFFFFFF
+*/
+
+
 
   log(j1939_pdu)
   log("--------------------------------------------")
@@ -416,6 +716,39 @@ testcase tc_Example001()  runs on MTC_CT
 //when the test case terminates, MTC will terminate as well
 //PTCs terminate (reach the state done) when the function with which they were started terminates
 
+//test case declarations
+testcase tc_Example002()  runs on MTC_CT
+{
+
+  var PTC_isobus_CT v_PTC_isobus 
+  var PTC1_CT v_PTC1
+
+  //create components
+  v_PTC_isobus:=PTC_isobus_CT.create; 
+  v_PTC1:=PTC1_CT.create; 
+
+  //connnect ports
+  //map ports
+
+  //start components 
+
+  v_PTC1.start(f_behaviour2_sync());
+  v_PTC_isobus.start(f_behaviour_isobus(v_PTC1));
+
+  //wait for termination
+  all component.done
+
+
+  //unmap ports
+  //disconnect ports
+  //terminate all parallel test componenets
+  all component.kill
+
+}
+//when the test case terminates, MTC will terminate as well
+//PTCs terminate (reach the state done) when the function with which they were started terminates
+
+
 control 
 {
 
@@ -426,3 +759,4 @@ control
 }//endcontrol
 
 } with { encode "RAW" } 
+

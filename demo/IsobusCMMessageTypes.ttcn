@@ -1,61 +1,69 @@
-/* Copyright (c) 2010, 2016  Ericsson AB
-* All rights reserved. This program and the accompanying materials
-* are made available under the terms of the Eclipse Public License v1.0
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v10.html
-*
-* Contributors:
-* Michael Josenhans
-******************************************************************************/
-
-
-
 module IsobusCMMessageTypes {
 import from General_Types all
 import from IsobusMessageTypes all
 
+type integer SEQ_NO (1..255) with { variant "FIELDLENGTH(8)" }
+type integer NUMBER_OF_PACKETS (1..255) with { variant "FIELDLENGTH(8)" }
+
 type OCT1 Ctrl
 
 type record RequestToSend{
-  Ctrl           ctrl ('10'O),
-  INT2           msgSizeInByte,
-  INT1           totalNumberOfPackets,
-  INT1           maxNoOfPacketsInResponseToCTS,
-  PGN            pgnOfMultiPacketMessage
+  Ctrl               ctrl ('10'O),
+  INT2               msgSizeInBytes,
+  NUMBER_OF_PACKETS  totalNumberOfPackets,
+  INT1               maxNoOfPacketsInResponseToCTS,
+  PGN                pgnOfMultiPacketMessage
 } with { variant "" };
 
 type record ClearToSend{
-  Ctrl           ctrl ('11'O),
-  INT1           totalNumberOfPackets,
-  INT1           nextPacketNumber,
-  OCT1           reserved4  ('FF'O),
-  OCT1           reserved5  ('FF'O),
-  PGN            pgnOfMultiPacketMessage
+  Ctrl               ctrl ('11'O),
+  NUMBER_OF_PACKETS  totalNumberOfPackets,
+  INT1               nextPacketNumber,
+  OCT1               reserved4  ('FF'O),
+  OCT1               reserved5  ('FF'O),
+  PGN                pgnOfMultiPacketMessage
 } with { variant "" };
 
 type record EndOfMessageAcknowledgement{
-  Ctrl           ctrl ('13'O),
-  INT2           msgSizeInByte,
-  INT1           totalNumberOfPackets,
-  OCT1           reserved5  ('FF'O),
-  PGN            pgnOfMultiPacketMessage
+  Ctrl               ctrl ('13'O),
+  INT2               msgSizeInByte,
+  NUMBER_OF_PACKETS  totalNumberOfPackets,
+  OCT1               reserved5  ('FF'O),
+  PGN                pgnOfMultiPacketMessage
 } with { variant "" };
+
+
+type enumerated e_ConnectionAbort_AbortReason { 
+  alreadyInOneOrMoreConnectionManagedSessionsAndCannotSupportAnother                 (1),
+  systemResourcesWereNeededForAnotherTaskSoThisConnectionManagedSessionWasTerminated (2),
+  aTimeoutOccurredAndThisIsTheConnectionAbortToCloseTheSession                       (3),
+  cts_MessagesReceivedWhenDataTransferIsInProgress                                   (4),
+  maximumRetransmitRequestLimitReached                                               (5),
+  unexpectedDataTransferPacket                                                       (6),
+  badSequenceNumber                                                                  (7),
+  duplicateSequenceNumber                                                            (8),
+  iso_11783_7_error_code_251                                                       (251),
+  iso_11783_7_error_code_252                                                       (252), 
+  iso_11783_7_error_code_253                                                       (253),
+  iso_11783_7_error_code_254                                                       (254),
+  iso_11783_7_error_code_255                                                       (255)}
+with {variant "PADDING(octet)" };
 
 type record ConnectionAbort{
-  Ctrl           ctrl ('FF'O),
-  OCT1           connectionAbortReason,
-  OCT1           reserved3  ('FF'O),
-  OCT1           reserved4  ('FF'O),
-  OCT1           reserved5  ('FF'O),
-  PGN            pgnOfMultiPacketMessage
+  Ctrl               ctrl ('FF'O),
+  e_ConnectionAbort_AbortReason        connectionAbortReason,
+  OCT1               reserved3  ('FF'O),
+  OCT1               reserved4  ('FF'O),
+  OCT1               reserved5  ('FF'O),
+  PGN                pgnOfMultiPacketMessage
 } with { variant "" };
 
-type record BroadcastAnnonce{
-  Ctrl           ctrl ('20'O),
-  INT2           msgSizeInByte,
-  INT1           totalNumberOfPackets,
-  OCT1           reserved5  ('FF'O),
-  PGN            pgnOfMultiPacketMessage
+type record BroadcastAnnounce{
+  Ctrl               ctrl ('20'O),
+  INT2               msgSizeInByte,
+  NUMBER_OF_PACKETS  totalNumberOfPackets,
+  OCT1               reserved5  ('FF'O),
+  PGN                pgnOfMultiPacketMessage
 } with { variant "" };
 
 type union TP_CM
@@ -63,11 +71,11 @@ type union TP_CM
   RequestToSend                   requestToSend,
   ClearToSend                     clearToSend,
   EndOfMessageAcknowledgement     endOfMessageAcknowledgement,
-  BroadcastAnnonce                broadcastAnnounce,
+  BroadcastAnnounce               broadcastAnnounce,
   ConnectionAbort                 connectionAbort
 }
 with {variant "TAG	(
-  // put all ECU2VT request messages here
+  // put all TP_CM request messages here
   requestToSend,                ctrl = '10'O;
   clearToSend,                  ctrl = '11'O;
   endOfMessageAcknowledgement,  ctrl = '13'O;
@@ -75,11 +83,101 @@ with {variant "TAG	(
   connectionAbort,              ctrl = 'FF'O;
   ) " 
 }
+// ETP_CM
+type integer ETP_MSG_SIZE (1786..117440505) 
+with { variant "FIELDLENGTH(32)" };
 
+type record ExtendedMessageRequestToSend{
+  Ctrl               ctrl ('20'O),
+  ETP_MSG_SIZE       msgSizeInBytes,
+  PGN                pgnOfExtendedPacketedMessage
+} with { variant "" };
+
+type integer ETP_NextPacketNumberToSend (0..16777215) 
+with { variant "FIELDLENGTH(32)" };
+
+type record ExtendedMessageClearToSend{
+  Ctrl               ctrl ('21'O),
+  INT1               NumberOfPacketsToSend,
+  ETP_NextPacketNumberToSend   nextPacketNumberToSend,
+  PGN                pgnOfExtendedPacketedMessage
+} with { variant "" };
+
+type integer ETP_NoPacketForOffset (1..255) 
+with { variant "FIELDLENGTH(8)" };
+
+type record ExtendedMessageDataPacketOffset{
+  Ctrl               ctrl ('22'O),
+  ETP_NoPacketForOffset numberOfPacketsToWhichToApplyTheOffset,
+  NUMBER_OF_PACKETS  totalNumberOfPackets,
+  ETP_NextPacketNumberToSend    dataPacketOffset,
+  PGN                pgnOfExtendedPacketedMessage
+} with { variant "" };
+
+type record ExtendedMessageEndOfMessageAcknowledgement{
+  Ctrl               ctrl ('23'O),
+  ETP_MSG_SIZE       numberOfBytesTransferred,
+  PGN                pgnOfExtendedPacketedMessage
+} with { variant "" };
+
+type enumerated e_ETP_ConnectionAbort_AbortReason { 
+  alreadyInOneOrMoreConnectionManagedSessionsAndCannotSupportAnother                 (1),
+  systemResourcesWereNeededForAnotherTaskSoThisConnectionManagedSessionWasTerminated (2),
+  aTimeoutOccurredAndThisIsTheConnectionAbortToCloseTheSession                       (3),
+  cts_MessagesReceivedWhenDataTransferIsInProgress                                   (4),
+  maximumRetransmitRequestLimitReached                                               (5),
+  unexpectedDataTransferPacket                                                       (6),
+  badSequenceNumber                                                                  (7),
+  duplicateSequenceNumber                                                            (8),
+  unexpectedEDPO_Packet                                                              (9),
+  unexpectedEDPO_PGN                                                                (10),
+  edpo_numberOfPacketsIsGreaterThanCTS                                              (11),
+  badEDPO_Offset                                                                    (12),
+  unexpectedECTS_PGN                                                                (14),
+  ECTS_requestedPacketsExceedsMessageSize                                           (15),
+  iso_11783_7_error_code_251                                                       (251),
+  iso_11783_7_error_code_252                                                       (252), 
+  iso_11783_7_error_code_253                                                       (253),
+  iso_11783_7_error_code_254                                                       (254),
+  iso_11783_7_error_code_255                                                       (255)}
+with {variant "PADDING(octet)" };
+
+type record ExtendedMessageConnectionAbort{
+  Ctrl               ctrl ('FF'O),
+  e_ETP_ConnectionAbort_AbortReason        connectionAbortReason,
+  OCT1               reserved3  ('FF'O),
+  OCT1               reserved4  ('FF'O),
+  OCT1               reserved5  ('FF'O),
+  PGN                pgnOfExtendedPacketedMessage
+} with { variant "" };
+
+type union ETP_CM
+{
+  ExtendedMessageRequestToSend                   extendedMessageRequestToSend,
+  ExtendedMessageClearToSend                     extendedMessageClearToSend,
+  ExtendedMessageDataPacketOffset                extendedMessageDataPacketOffset,
+  ExtendedMessageEndOfMessageAcknowledgement     extendedMessageEndOfMessageAcknowledgement,
+  ExtendedMessageConnectionAbort                 extendedMessageConnectionAbort
+}
+with {variant "TAG	(
+  // put all ETP_CM request messages here
+  extendedMessageRequestToSend,                ctrl = '20'O;
+  extendedMessageClearToSend,                  ctrl = '21'O;
+  extendedMessageDataPacketOffset,             ctrl = '22'O;
+  extendedMessageEndOfMessageAcknowledgement,  ctrl = '23'O;
+  extendedMessageConnectionAbort,              ctrl = 'FF'O;
+  ) " 
+}
 
 type record TP_DT{
-  INT1 seq_no,
-  OCT7 data
+  SEQ_NO seq_no,
+  OCT7   data
+} with { variant "" }
+
+type record ETP_DT{
+  SEQ_NO seq_no,
+  OCT7   data
 } with { variant "" }
 
 } with { encode "RAW" } 
+

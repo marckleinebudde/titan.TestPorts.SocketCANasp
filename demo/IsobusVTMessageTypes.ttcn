@@ -1,12 +1,3 @@
-/* Copyright (c) 2010, 2016  Ericsson AB
-* All rights reserved. This program and the accompanying materials
-* are made available under the terms of the Eclipse Public License v1.0
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v10.html
-*
-* Contributors:
-* Michael Josenhans
-******************************************************************************/
 module IsobusVTMessageTypes {
 
 import from General_Types all
@@ -14,376 +5,1059 @@ import from IsobusMessageTypes all
 
 type INT1 VTfunction
 
+type integer AnyObjectID (0..65535) with { variant "FIELDLENGTH(16)" }; // includes also 65535 as no object
+type integer ValidObjectID (0..65534) with { variant "FIELDLENGTH(16)" };
+type integer AttributeID (0..255) with { variant "FIELDLENGTH(8)" };
+type INT2 PositionType 
+type INT1 KeyNumberType
+type INT2 FrequencyType
+
+type enumerated e_SoftKeyActivationReq_KeyAactivationCode { 
+  keyHasBeenReleased     (0),
+  keyHasBeenPressed      (1),
+  keyIsStillPressed      (2),
+  keyPressAborted        (3)}
+with {variant "PADDING(octet)" };
+
+type record SoftKeyActivationReq 
+{
+  VTfunction                                vtfunction (0),
+  e_SoftKeyActivationReq_KeyAactivationCode keyActivationCode,
+  ValidObjectID                             objectID,
+  ValidObjectID                             parentObjectID,
+  KeyNumberType                             keyNumber,
+  OCT1                                      reserved8  ('FF'O)
+} with {variant "" };
+
+type record SoftKeyActivationRes 
+{
+  VTfunction                                vtfunction (0),
+  e_SoftKeyActivationReq_KeyAactivationCode keyActivationCode,  
+  ValidObjectID                             objectID,
+  ValidObjectID                             parentObjectID,
+  KeyNumberType                             keyNumber,
+  OCT1                                      reserved8  ('FF'O)
+} with {variant "" };
+
+type enumerated e_ButtonActivationReq_KeyAactivationCode { 
+  buttonHasBeenUnlatchedorReleased     (0),
+  buttonHasBeenPressedOrLatched        (1),
+  buttonIsStillHeld                    (2),
+  buttonPressAborted                   (3)}
+with {variant "PADDING(octet)" };
+
+type record ButtonActivationReq
+{
+  VTfunction                               vtfunction (1),
+  e_ButtonActivationReq_KeyAactivationCode keyAactivationCode,
+  ValidObjectID                            objectID,
+  ValidObjectID                            parentObjectID,
+  KeyNumberType                            buttonKeyCode,
+  OCT1                                     reserved8  ('FF'O)
+} with {variant "" };
+
+type enumerated e_ButtonActivationRes_KeyAactivationCode { 
+  buttonHasBeenUnlatchedorReleased     (0),
+  buttonHasBeenPressedOrLatched        (1),
+  buttonIsStillHeld                    (2),
+  buttonPressAborted                   (3)}
+with {variant "PADDING(octet)" };
+
+type record ButtonActivationRes
+{
+  VTfunction                               vtfunction (1),
+  e_ButtonActivationRes_KeyAactivationCode keyAactivationCode,
+  ValidObjectID                            objectID,
+  ValidObjectID                            parentObjectID,
+  KeyNumberType                            buttonKeyCode,
+  OCT1                                     reserved8  ('FF'O)
+} with {variant "" };
+
+type enumerated e_PointingEvent_touchState {
+  released    (0), // version 4 and later
+  pressed     (1), // version 4 and later
+  held        (2), // version 4 and later
+  reserved  (255)} // version 3 and prior
+with {variant "PADDING(octet)" };
+
+type record PointingEventReq {
+  VTfunction                      vtfunction (2),
+  PositionType                    x_position,
+  PositionType                    y_position,
+  e_PointingEvent_touchState   touchState,
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type record PointingEventRes {
+  VTfunction                      vtfunction (2),
+  PositionType                    x_position,
+  PositionType                    y_position,
+  e_PointingEvent_touchState   touchState,
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type enumerated e_VTOnUserLayoutHideShow_state { 
+  hidden     (0),
+  shown      (1)}
+with {variant "PADDING(octet)" };
+
+type enumerated e_VTSelectInputObject_selection {
+  objectIsDeselected (0),
+  objectIsSelected   (1)}
+with {variant "PADDING(octet)" };
+
+type record VTSelectInputObject_v4AndLater_Bitmask{ 
+  boolean objectIsOpenForDataInput,
+  boolean reserved1     (false),
+  boolean reserved2     (false),
+  boolean reserved3     (false),
+  boolean reserved4     (false),
+  boolean reserved5     (false),
+  boolean reserved6     (false),
+  boolean reserved7     (false)
+}
+with {variant "" };
+
+type record VTSelectInputObjectReq_v3AndPrior {
+  VTfunction                      vtfunction (3),
+  ValidObjectID                   objectID,
+  e_VTSelectInputObject_selection selection,
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type record VTSelectInputObjectReq_v4AndLater {
+  VTfunction                             vtfunction (3),
+  ValidObjectID                          objectID,
+  e_VTSelectInputObject_selection        selection,
+  VTSelectInputObject_v4AndLater_Bitmask bitmask,
+  OCT1                                   reserved6  ('FF'O),
+  OCT1                                   reserved7  ('FF'O),
+  OCT1                                   reserved8  ('FF'O)
+} with {variant "" };
+
+type record VTSelectInputObjectRes_v4AndPrior {
+  VTfunction                      vtfunction (3),
+  ValidObjectID                   objectID,
+  e_VTSelectInputObject_selection selection,
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type record VTSelectInputObjectRes_v5AndLater {
+  VTfunction                             vtfunction (3),
+  ValidObjectID                          objectID,
+  e_VTSelectInputObject_selection        selection,
+  VTSelectInputObject_v4AndLater_Bitmask bitmask,
+  OCT1                                   reserved6  ('FF'O),
+  OCT1                                   reserved7  ('FF'O),
+  OCT1                                   reserved8  ('FF'O)
+} with {variant "" };
+
+type record VTChangeNumericValueReq
+{
+  VTfunction                      vtfunction (5),
+  ValidObjectID                   objectID,
+  OCT1                            reserved4  ('FF'O),
+  OCT4                            value_
+} with { variant "" };
+
+type record VTChangeNumericValueRes
+{
+  VTfunction                      vtfunction (5),
+  ValidObjectID                   objectID,
+  OCT1                            reserved4  ('FF'O),
+  OCT4                            value_
+} with { variant "" };
+
+type record VTOnUserLayoutHideShowReq
+{
+  VTfunction                      vtfunction (9),
+  ValidObjectID                   objectID1,
+  e_VTOnUserLayoutHideShow_state  state1,
+  AnyObjectID                     objectID2,
+  e_VTOnUserLayoutHideShow_state  state2, // If the previous attribute is the NULL Object ID, this bit shall be set to false.
+  OCT1                            reserved8  ('FF'O)
+} with { variant "" };
+
+type record VTOnUserLayoutHideShowRes
+{
+  VTfunction                      vtfunction (9),
+  ValidObjectID                   objectID1,
+  e_VTOnUserLayoutHideShow_state  state1,
+  AnyObjectID                     objectID2,
+  e_VTOnUserLayoutHideShow_state  state2, // If the previous attribute is the NULL Object ID, this bit shall be set to false.
+  OCT1                            reserved8  ('FF'O)
+} with { variant "" };
+
+type enumerated e_HideShowObject_state { 
+  hide      (0),
+  show      (1)}
+with {variant "PADDING(octet)" };
+
+type record HideShowObjectReq
+{
+  VTfunction                      vtfunction (160),
+  ValidObjectID                   objectID,
+  e_HideShowObject_state          hideShow,
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type record HideShowObjectRes_errorCodes{ 
+  boolean referencesToMissingObjects,
+  boolean invalidObjectID,
+  boolean undefined     (false),
+  boolean AnyOtherError,
+  boolean reserved4     (false),
+  boolean reserved5     (false),
+  boolean reserved6     (false),
+  boolean reserved7     (false)
+}
+with {variant "" };
+
+type record HideShowObjectRes
+{
+  VTfunction                      vtfunction (160),
+  ValidObjectID                   objectID,
+  e_HideShowObject_state          hideShow,
+  HideShowObjectRes_errorCodes    errorCodes,
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type enumerated e_SelectInputObjectReq_Option { 
+  activateForDataInputTheObjectReferencedByObjectID     (0),
+  activateForDataInputTheObjectReferencedByObjectID1    (1),
+  setFocusToObjectReferencedByObjectID                (255)}
+with {variant "PADDING(octet)" };
+
+type record SelectInputObjectReq{
+  VTfunction                      vtfunction (162),
+  AnyObjectID                     objectID,
+  e_SelectInputObjectReq_Option   option,                
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)  
+} with {variant "" };
+
+type enumerated e_SelectInputObjectRes_Response { 
+  objectReferencedByObjectIDisNotSelectedOrObjectIDisTheNULLobject     (0),
+  objectReferencedByObjectIDisSelected                                 (1),
+  objectReferencedByObjectIDisOpenedForEdit                            (2)}
+with {variant "PADDING(octet)" };
+
+type record SelectInputObjectRes_errorCodes { 
+  boolean objectIsDisabled,
+  boolean invalidObjectID,
+  boolean objectIsNotOnTheActiveMaskOrObjectIsInAHiddenContainer,
+  boolean couldNotCompleteAnotherInputFieldIsCurrentlyBeingModifiedOrAButtonOrSoftKeyisCurrentlyBeingHeld,
+  boolean AnyOtherError,
+  boolean reserved5     (false),
+  boolean reserved6     (false),
+  boolean reserved7     (false)
+}
+with {variant "" };
+
+type record SelectInputObjectRes{
+  VTfunction                      vtfunction (162),
+  AnyObjectID                     objectID,
+  e_SelectInputObjectRes_Response response,                
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)  
+} with {variant "" };
+
+type record ControlAudioSignalReq{
+  VTfunction                      vtfunction (163),
+  INT1                            activations,
+  FrequencyType                   frequencyInHz,
+  INT2                            onTimeDuration_ms,
+  INT2                            offTimeDuration_ms
+} with {variant "" };
+
+type enumerated e_ControlAudioSignalRes_ErrorCodes { 
+  audioDeviceIsBusy     (0),
+  undefined             (1),
+  objectReferencedByObjectIDisOpenedForEdit                            (2)}
+with {variant "PADDING(octet)" };
+
+type record ControlAudioSignalRes_ErrorCodes { 
+  boolean audioDeviceIsBusy,
+  boolean undefined1    (false),
+  boolean undefined2    (false),
+  boolean undefined3    (false),
+  boolean AnyOtherError,
+  boolean reserved5     (false),
+  boolean reserved6     (false),
+  boolean reserved7     (false)
+}
+with {variant "" };
+
+type record ControlAudioSignalRes{
+  VTfunction                        vtfunction (163),
+  ControlAudioSignalRes_ErrorCodes  errorCodes,
+  OCT1                            reserved3  ('FF'O),
+  OCT1                            reserved4  ('FF'O),
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type record ChangeNumericValueReq{
+  VTfunction                      vtfunction (168),
+  ValidObjectID                   objectID,
+  OCT1                            reserved4  ('FF'O),
+  OCT4                            newValueForValueAttribute  
+} with {variant "" };
+
+type record ChangeNumericValueRes_errorCodes { 
+  boolean invalidObjectID,
+  boolean invalidValue,
+  boolean valueInUse,
+  boolean undefined     (false),
+  boolean AnyOtherError,
+  boolean reserved5     (false),
+  boolean reserved6     (false),
+  boolean reserved7     (false)
+}
+with {variant "" };
+
+type record ChangeNumericValueRes{
+  VTfunction                        vtfunction (168),
+  ValidObjectID                     objectID,
+  ChangeNumericValueRes_errorCodes  errorCodes,
+  OCT4                              valueForValueAttribute  
+} with {variant "" };
+
+type record ChangeActiveMaskReq
+{
+  VTfunction                      vtfunction (173),
+  ValidObjectID                   workingSetObjectID,
+  ValidObjectID                   newActiveMaskObjectID,
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type record ChangeActiveMaskRes_errorCodes { 
+  boolean invalidWorkingSetObjectID,
+  boolean invalidMaskObjectID,
+  boolean undefined1    (false),
+  boolean undefined2    (false),
+  boolean AnyOtherError,
+  boolean reserved5     (false),
+  boolean reserved6     (false),
+  boolean reserved7     (false)
+}
+with {variant "" };
+
+type record ChangeActiveMaskRes
+{
+  VTfunction                      vtfunction (173),
+  ValidObjectID                   newActiveMaskObjectID,
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+}
+with {variant "" };
+
+type enumerated e_ChangeSoftKeyMaskReq_MaskType { 
+  Data                     (1),
+  Alarm                    (2)}
+with {variant "PADDING(octet)" };
+
+type record ChangeSoftKeyMaskReq 
+{
+  VTfunction                      vtfunction (174),
+  e_ChangeSoftKeyMaskReq_MaskType maskType,
+  ValidObjectID                   DataOrAlarmMaskObjectID,
+  ValidObjectID                   NewSoftKeyMaskObjectID,
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)}
+with {variant "" };
+
+type record ChangeSoftKeyMaskRes_errorCodes { 
+  boolean invalidDataOrAlarmMaskObjectID,
+  boolean invalidSoftKeyMaskObjectID,
+  boolean missingObjects,
+  boolean MaskOrChildObjectHasErrors,
+  boolean AnyOtherError,
+  boolean reserved5     (false),
+  boolean reserved6     (false),
+  boolean reserved7     (false)
+}
+with {variant "" };
+
+type record ChangeSoftKeyMaskRes 
+{
+  VTfunction                      vtfunction (174),
+  ValidObjectID                   DataOrAlarmMaskObjectID,
+  ValidObjectID                   NewSoftKeyMaskObjectID,
+  ChangeSoftKeyMaskRes_errorCodes errorCodes,
+  OCT1                            reserved8  ('FF'O)}
+with {variant "" };
+
+type record ChangeAttributeReq
+{
+  VTfunction                      vtfunction (175),
+  ValidObjectID                   objectID,
+  AttributeID                     attributeID,
+  OCT4                            newValueOfAttribute
+}
+with {variant "" };
+
+type record ChangeAttributeRes_errorCodes { 
+  boolean invalidWorkingSetObjectID,
+  boolean invalidAttributeID,
+  boolean invalidValue,
+  boolean valueInUse,
+  boolean AnyOtherError,
+  boolean reserved5     (false),
+  boolean reserved6     (false),
+  boolean reserved7     (false)
+}
+with {variant "" };
+
+type record ChangeAttributeRes
+{
+  VTfunction                      vtfunction (175),
+  ValidObjectID                   objectID,
+  AttributeID                     attributeID,
+  ChangeAttributeRes_errorCodes   errorCodes,
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+}
+with {variant "" };
+
+type record DeleteObjectPoolReq
+{
+  VTfunction                      vtfunction (178),
+  OCT1                            reserved2  ('FF'O),
+  OCT1                            reserved3  ('FF'O),
+  OCT1                            reserved4  ('FF'O),
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type record DeleteObjectPoolRes_ErrorCodes { 
+  boolean deletionError,
+  boolean undefined1      (false),
+  boolean undefined2      (false),
+  boolean undefined3      (false),
+  boolean anyOtherError,
+  boolean reserved5       (false),
+  boolean reserved6       (false),
+  boolean reserved7       (false)
+}
+
+type record DeleteObjectPoolRes
+{
+  VTfunction                      vtfunction (178),
+  DeleteObjectPoolRes_ErrorCodes  errorCodes,
+  OCT1                            reserved3  ('FF'O),
+  OCT1                            reserved4  ('FF'O),
+  OCT1                            reserved5  ('FF'O),
+  OCT1                            reserved6  ('FF'O),
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+type record ChangeStringValueReq
+{
+  VTfunction vtfunction (179),
+  ValidObjectID     objectID,
+  INT2              numberOfBytes ,
+  octetstring       newStringValue
+}
+with {
+  variant (numberOfBytes) "LENGTHTO(newStringValue)";
+  variant (numberOfBytes) "UNIT(octets)"
+}
+
+type record ChangeStringValueRes_ErrorCodes { 
+  boolean undefined       (false),
+  boolean invalidObjectID,
+  boolean stringTooLong,
+  boolean anyOtherError,
+  boolean reserved4       (false),
+  boolean reserved5       (false),
+  boolean reserved6       (false),
+  boolean reserved7       (false)
+}
+with {variant "" };
+
+type record ChangeStringValueRes
+{
+  VTfunction                      vtfunction (179),
+  OCT1                            reserved2  ('FF'O),
+  OCT1                            reserved3  ('FF'O),
+  ValidObjectID                   objectID,
+  ChangeStringValueRes_ErrorCodes errorCodes,
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with {variant "" };
+
+
+type ValidObjectID AuxiliaryInputType2StatusInd_AuxiliaryInputObjectID
+
+type BIT2np AuxiliaryInputType2StatusInd_OperatingStateType
+
+type record AuxiliaryInputType2StatusInd
+{
+  VTfunction                                          vtfunction (38),
+  AuxiliaryInputType2StatusInd_AuxiliaryInputObjectID auxiliaryInputObjectID,
+  OCT2                                                value1,
+  OCT2                                                value2,
+  AuxiliaryInputType2StatusInd_OperatingStateType     operationState
+} with { variant "" };
+
+type record ChangeChildPositionReq
+{
+  VTfunction vtfunction (180),
+  ValidObjectID  parentObjectID,
+  ValidObjectID  objectID,
+  PositionType   pos_x_relative, 
+  PositionType   pos_y_relative  
+} with { variant "" };
+
+type record ChangeChildPositionRes_ErrorCodes { 
+  boolean invalidParentObjectID,
+  boolean invalidObjectID,
+  boolean undefined       (false),
+  boolean anyOtherError,
+  boolean reserved4       (false),
+  boolean reserved5       (false),
+  boolean reserved6       (false),
+  boolean reserved7       (false)
+}
+with {variant "" };
+
+type record ChangeChildPositionRes
+{
+  VTfunction vtfunction (180),
+  ValidObjectID  parentObjectID,
+  ValidObjectID  objectID,
+  ChangeChildPositionRes_ErrorCodes errorCodes,
+  OCT1                            reserved7  ('FF'O),
+  OCT1                            reserved8  ('FF'O)
+} with { variant "" };
+
 type record GetMemoryReq
 {
-    VTfunction vtfunction (194),
-    OCT1           reserved2  ('FF'O),
-    INT3           memoryRequired,
-    OCT1           reserved7  ('FF'O),
-    OCT1           reserved8  ('FF'O)
+  VTfunction vtfunction (194),
+  OCT1           reserved2  ('FF'O),
+  INT3           memoryRequired,
+  OCT1           reserved7  ('FF'O),
+  OCT1           reserved8  ('FF'O)
 } with { variant "" };
 
 type enumerated e_GetMemoryResVersionNumber { 
-    compliantWithHannoverAgritechnica_2001_limitedfeatureSet          (0),
-    compliantWithFDISVersionISO11783_6_2002_E_Final_Draft             (1),
-    compliantWithISVersionISO11783_6_2004_E_First_Edition             (2),
-    compliantWithISVersionISO11783_6_2010_E_Second_Edition_version_3  (3),
-    compliantWithISVersionISO11783_6_2010_E_Second_Edition_version_4 (4),
-    compliantWithISVersionISO11783_6_2014_E_Third_Edition             (5)}
+  compliantWithHannoverAgritechnica_2001_limitedfeatureSet          (0),
+  compliantWithFDISVersionISO11783_6_2002_E_Final_Draft             (1),
+  compliantWithISVersionISO11783_6_2004_E_First_Edition             (2),
+  compliantWithISVersionISO11783_6_2010_E_Second_Edition_version_3  (3),
+  compliantWithISVersionISO11783_6_2010_E_Second_Edition_version_4 (4),
+  compliantWithISVersionISO11783_6_2014_E_Third_Edition             (5)}
 with {variant "PADDING(octet)" };
 
 type enumerated e_GetMemoryResStatus { 
-    thereCanBeEnoughMemory             (0),
-    thereIsNotEnoughMemoryAvailable    (1)}
+  thereCanBeEnoughMemory             (0),
+  thereIsNotEnoughMemoryAvailable    (1)}
 with {variant "PADDING(octet)" }
 
 type record GetMemoryRes
 {
-    VTfunction vtfunction (194),
-    e_GetMemoryResVersionNumber versionNumber,
-    e_GetMemoryResStatus        status,
-    OCT1    reserved4  ('FF'O),
-    OCT1    reserved5  ('FF'O),
-    OCT1    reserved6  ('FF'O),
-    OCT1    reserved7  ('FF'O),
-    OCT1    reserved8  ('FF'O)
+  VTfunction vtfunction (194),
+  e_GetMemoryResVersionNumber versionNumber,
+  e_GetMemoryResStatus        status,
+  OCT1    reserved4  ('FF'O),
+  OCT1    reserved5  ('FF'O),
+  OCT1    reserved6  ('FF'O),
+  OCT1    reserved7  ('FF'O),
+  OCT1    reserved8  ('FF'O)
 } with { variant "" };
 
 type record GetNumberOfSoftKeysReq
 {
-    VTfunction vtfunction (192),
-    OCT1           reserved2  ('FF'O),
-    OCT1           reserved3  ('FF'O),
-    OCT1           reserved4  ('FF'O),
-    OCT1           reserved5  ('FF'O),
-    OCT1           reserved6  ('FF'O),
-    OCT1           reserved7  ('FF'O),
-    OCT1           reserved8  ('FF'O)
+  VTfunction vtfunction (192),
+  OCT1           reserved2  ('FF'O),
+  OCT1           reserved3  ('FF'O),
+  OCT1           reserved4  ('FF'O),
+  OCT1           reserved5  ('FF'O),
+  OCT1           reserved6  ('FF'O),
+  OCT1           reserved7  ('FF'O),
+  OCT1           reserved8  ('FF'O)
 } with { variant "" };
 
 type record GetNumberOfSoftKeysRes
 {
-    VTfunction vtfunction (192),
-    OCT1           navigationSoftKeys_,
-    OCT1           reserved3  ('FF'O),
-    OCT1           reserved4  ('FF'O),
-    OCT1           x_dots,
-    OCT1           y_dots,
-    OCT1           numberOfVirtualSoftKeys_,
-    OCT1           numberOfPhysicalSoftKeys_
+  VTfunction vtfunction (192),
+  OCT1           navigationSoftKeys_,
+  OCT1           reserved3  ('FF'O),
+  OCT1           reserved4  ('FF'O),
+  OCT1           x_dots,
+  OCT1           y_dots,
+  OCT1           numberOfVirtualSoftKeys_,
+  OCT1           numberOfPhysicalSoftKeys_
 } with { variant "" };
 
 type record GetTextFontDataReq
 {
-    VTfunction vtfunction (195),
-    OCT1           reserved2  ('FF'O),
-    OCT1           reserved3  ('FF'O),
-    OCT1           reserved4  ('FF'O),
-    OCT1           reserved5  ('FF'O),
-    OCT1           reserved6  ('FF'O),
-    OCT1           reserved7  ('FF'O),
-    OCT1           reserved8  ('FF'O)
+  VTfunction vtfunction (195),
+  OCT1           reserved2  ('FF'O),
+  OCT1           reserved3  ('FF'O),
+  OCT1           reserved4  ('FF'O),
+  OCT1           reserved5  ('FF'O),
+  OCT1           reserved6  ('FF'O),
+  OCT1           reserved7  ('FF'O),
+  OCT1           reserved8  ('FF'O)
 } with { variant "" };
 
 
-type enumerated e_TextFontDataRes_small_font_sizes { 
-    font_6x8    (0),
-    font_8x8    (1),
-    font_8x12   (2),
-    font_12x16  (4),
-    font_16x16  (8),
-    font_16x24  (16),
-    font_24x32  (32),
-    font_32x32  (64),
-    reserved    (128)
-     }
-with {variant "PADDING(octet)" };
+type record TextFontDataRes_small_font_sizes { 
+  boolean font_8x8,
+  boolean font_8x12,
+  boolean font_12x16,
+  boolean font_16x16,
+  boolean font_16x24,
+  boolean font_24x32,
+  boolean font_32x32,
+  boolean reserved
+}
+with {variant "" };
 
-type enumerated e_TextFontDataRes_large_font_sizes { 
-    font_32x48    (1),
-    font_48x64    (2),
-    font_64x64    (4),
-    font_64x96    (8),
-    font_96x128   (16),
-    font_128x128  (32),
-    font_128x192  (64),
-    reserved      (128)
-     }
-with {variant "PADDING(octet)" }
+type record TextFontDataRes_large_font_sizes { 
+  boolean font_32x48,
+  boolean font_48x64,
+  boolean font_64x64,
+  boolean font_64x96,
+  boolean font_96x128,
+  boolean font_128x128,
+  boolean font_128x192,
+  boolean reserved (false)
+}
+with {variant "" }
 
-type enumerated e_TextFontDataRes_type_attribute { 
-    normal_text                      (0),
-    bold_text                        (1),
-    crossed_out_text                 (2),
-    underlined_text                  (4),
-    italics_text                     (8),
-    inverted_text                    (16),
-    flash_inverted                   (32),
-    flash_background_and_foreground  (64),
-    proportional_font_rendering_     (128)
-     }
-with {variant "PADDING(octet)"}
+type record TextFontDataRes_type_attribute { 
+  boolean bold_text,
+  boolean crossed_out_text,
+  boolean underlined_text,
+  boolean italics_text,
+  boolean inverted_text,
+  boolean flash_inverted,
+  boolean flash_background_and_foreground,
+  boolean proportional_font_rendering
+}
+with {variant ""}
 
 type record GetTextFontDataRes
 {
-    VTfunction vtfunction (195),
-    OCT1           reserved2  ('FF'O),
-    OCT1           reserved3  ('FF'O),
-    OCT1           reserved4  ('FF'O),
-    OCT1           reserved5  ('FF'O),
-    e_TextFontDataRes_small_font_sizes  small_font_sizes,
-    e_TextFontDataRes_large_font_sizes  large_font_sizes,
-    e_TextFontDataRes_type_attribute    type_attribute
+  VTfunction vtfunction (195),
+  OCT1           reserved2  ('FF'O),
+  OCT1           reserved3  ('FF'O),
+  OCT1           reserved4  ('FF'O),
+  OCT1           reserved5  ('FF'O),
+  TextFontDataRes_small_font_sizes  small_font_sizes,
+  TextFontDataRes_large_font_sizes  large_font_sizes,
+  TextFontDataRes_type_attribute    type_attribute
 } with { variant "" };
 
 type record GetHardwareReq
 {
-    VTfunction vtfunction (199),
-    OCT1           reserved2  ('FF'O),
-    OCT1           reserved3  ('FF'O),
-    OCT1           reserved4  ('FF'O),
-    OCT1           reserved5  ('FF'O),
-    OCT1           reserved6  ('FF'O),
-    OCT1           reserved7  ('FF'O),
-    OCT1           reserved8  ('FF'O)
+  VTfunction vtfunction (199),
+  OCT1           reserved2  ('FF'O),
+  OCT1           reserved3  ('FF'O),
+  OCT1           reserved4  ('FF'O),
+  OCT1           reserved5  ('FF'O),
+  OCT1           reserved6  ('FF'O),
+  OCT1           reserved7  ('FF'O),
+  OCT1           reserved8  ('FF'O)
 } with { variant "" };
 
 
 type enumerated e_GetHardwareResGraphicType { 
-    monochrome                      (0),
-    colors16                        (1),
-    colors256                       (2)
-    }
+  monochrome                      (0),
+  colors16                        (1),
+  colors256                       (2)
+}
 with {variant "PADDING(octet)"}
 
-type record e_GetHardwareResHardware {
-    boolean touchScreenandPointingEvent,
-    boolean pointingDeviceAndPointingEvent,
-    boolean multipleFrequencyAudioOutput,
-    boolean adjustableVolumeAudioOutput,
-    boolean simultaneousActivationsOfPhysicalSoftKeys,
-    boolean simultaneousActivationsOfButtons,
-    boolean dragOperationViaPointingEvent,
-    boolean intermediateCoordinatesDuringDragOperation
+type record GetHardwareResHardwareType {
+  boolean touchScreenandPointingEvent,
+  boolean pointingDeviceAndPointingEvent,
+  boolean multipleFrequencyAudioOutput,
+  boolean adjustableVolumeAudioOutput,
+  boolean simultaneousActivationsOfPhysicalSoftKeys,
+  boolean simultaneousActivationsOfButtons,
+  boolean dragOperationViaPointingEvent,
+  boolean intermediateCoordinatesDuringDragOperation
 } with { variant "" };
+
+type INT1 BootTimeType
 
 type record GetHardwareRes
 {
-    VTfunction                 vtfunction (199),
-    e_GetHardwareResGraphicType  graphicType,
-    e_GetHardwareResHardware     hardware,
-    INT2                         xPixels,
-    INT2                         yPixels
+  VTfunction                   vtfunction (199),
+  BootTimeType                 bootTimeInSeconds,  // 255 for information not available
+  e_GetHardwareResGraphicType  graphicType,
+  GetHardwareResHardwareType   hardware,
+  INT2                         xPixels,
+  INT2                         yPixels
 } with { variant "" };
 
 type enumerated e_Codeplane { 
-    codeplane0     (0),
-    codeplane1     (1),
-    codeplane2     (2),
-    codeplane3     (3),
-    codeplane4     (4),
-    codeplane5     (5),
-    codeplane6     (6),
-    codeplane7     (7),
-    codeplane8     (8),
-    codeplane9     (9),
-    codeplane10    (10),
-    codeplane11    (11),
-    codeplane12    (12),
-    codeplane13    (13),
-    codeplane14    (14),
-    codeplane15    (15),
-    codeplane16    (16)}
+  codeplane0     (0),
+  codeplane1     (1),
+  codeplane2     (2),
+  codeplane3     (3),
+  codeplane4     (4),
+  codeplane5     (5),
+  codeplane6     (6),
+  codeplane7     (7),
+  codeplane8     (8),
+  codeplane9     (9),
+  codeplane10    (10),
+  codeplane11    (11),
+  codeplane12    (12),
+  codeplane13    (13),
+  codeplane14    (14),
+  codeplane15    (15),
+  codeplane16    (16)}
 with {variant "PADDING(octet)"}
 
 
 type record GetSupportedWidecharsReq
 {
-    VTfunction vtfunction (193),
-    e_Codeplane    codeplane,
-    OCT2           firstWideCharInInquiryRange,
-    OCT2           lastWideCharInInquiryRange,
-    OCT1           reserved7  ('FF'O),
-    OCT1           reserved8  ('FF'O)
+  VTfunction vtfunction (193),
+  e_Codeplane    codeplane,
+  OCT2           firstWideCharInInquiryRange,
+  OCT2           lastWideCharInInquiryRange,
+  OCT1           reserved7  ('FF'O),
+  OCT1           reserved8  ('FF'O)
 } with { variant "" };
 
 type record WideCharRange
 {
-    OCT2           firstWideChar, 
-    OCT2           lastWideChar
+  OCT2           firstWideChar, 
+  OCT2           lastWideChar
 } with { variant "" };
 
 type record of  WideCharRange WideCharRangeArray
 
 type record GetSupportedWidecharsRes
 {
-    VTfunction vtfunction (193),
-    e_Codeplane        codeplane,
-    OCT2               firstWideCharInInquiryRange,
-    OCT2               lastWideCharInInquiryRange,
-    INT1               numberOfRanges,
-    WideCharRangeArray wideCharRangeArray
+  VTfunction vtfunction (193),
+  e_Codeplane        codeplane,
+  OCT2               firstWideCharInInquiryRange,
+  OCT2               lastWideCharInInquiryRange,
+  INT1               numberOfRanges,
+  WideCharRangeArray wideCharRangeArray
 } with {
-        variant (numberOfRanges) "LENGTHTO(wideCharRangeArray)";
-	variant (numberOfRanges) "UNIT(elements)"}
+  variant (numberOfRanges) "LENGTHTO(wideCharRangeArray)";
+  variant (numberOfRanges) "UNIT(elements)"}
 
 type record GetWindowMaskDataReq
 {
-    VTfunction vtfunction (196),
-    OCT1    reserved2  ('FF'O),
-    OCT1    reserved3  ('FF'O),
-    OCT1    reserved4  ('FF'O),
-    OCT1    reserved5  ('FF'O),
-    OCT1    reserved6  ('FF'O),
-    OCT1    reserved7  ('FF'O),
-    OCT1    reserved8  ('FF'O)
+  VTfunction vtfunction (196),
+  OCT1    reserved2  ('FF'O),
+  OCT1    reserved3  ('FF'O),
+  OCT1    reserved4  ('FF'O),
+  OCT1    reserved5  ('FF'O),
+  OCT1    reserved6  ('FF'O),
+  OCT1    reserved7  ('FF'O),
+  OCT1    reserved8  ('FF'O)
 } with { variant "" };
 
 type record GetWindowMaskDataRes
 {
-    VTfunction vtfunction (196),
-    OCT1    BackgroundColourVTUserLayoutDataMasks,
-    OCT1    BackgroundColourVTKeyCells,
-    OCT1    reserved4  ('FF'O),
-    OCT1    reserved5  ('FF'O),
-    OCT1    reserved6  ('FF'O),
-    OCT1    reserved7  ('FF'O),
-    OCT1    reserved8  ('FF'O)
+  VTfunction vtfunction (196),
+  OCT1    BackgroundColourVTUserLayoutDataMasks,
+  OCT1    BackgroundColourVTKeyCells,
+  OCT1    reserved4  ('FF'O),
+  OCT1    reserved5  ('FF'O),
+  OCT1    reserved6  ('FF'O),
+  OCT1    reserved7  ('FF'O),
+  OCT1    reserved8  ('FF'O)
 } with { variant "" };
 
 type record GetSupportedObjectsReq
 {
-    VTfunction vtfunction (197),
-    OCT1    reserved2  ('FF'O),
-    OCT1    reserved3  ('FF'O),
-    OCT1    reserved4  ('FF'O),
-    OCT1    reserved5  ('FF'O),
-    OCT1    reserved6  ('FF'O),
-    OCT1    reserved7  ('FF'O),
-    OCT1    reserved8  ('FF'O)
+  VTfunction vtfunction (197),
+  OCT1    reserved2  ('FF'O),
+  OCT1    reserved3  ('FF'O),
+  OCT1    reserved4  ('FF'O),
+  OCT1    reserved5  ('FF'O),
+  OCT1    reserved6  ('FF'O),
+  OCT1    reserved7  ('FF'O),
+  OCT1    reserved8  ('FF'O)
 } with { variant "" };
 
 type record GetSupportedObjectsRes
 {
-    VTfunction vtfunction (197),
-    INT2         numberOfBytesToFollow,
-    OCT1         supportedObjectTypes
+  VTfunction vtfunction (197),
+  INT2         numberOfBytesToFollow,
+  OCT1         supportedObjectTypes
 } with {
-        variant (numberOfBytesToFollow) "LENGTHTO(supportedObjectTypes)";
-	variant (numberOfBytesToFollow) "UNIT(elements)"}
+  variant (numberOfBytesToFollow) "LENGTHTO(supportedObjectTypes)";
+  variant (numberOfBytesToFollow) "UNIT(elements)"}
 
 
 type enumerated e_BusyCodes { 
-    vtIsBusyUpdatingVisibleMask            (0),
-    vtIsBusySavingDataToNonVolatileMemory  (1),
-    vtIsBusyExecutingACommand              (2),
-    vtIsBusyExecutingAMacro                (3),
-    vtIsBusyParsingAnObjectPool            (4),
-    reserved                               (5),
-    auxiliaryControlsLearnModeActive       (6),
-    vtIsOutOfMemory                        (7)}
+  vtIsBusyUpdatingVisibleMask            (0),
+  vtIsBusySavingDataToNonVolatileMemory  (1),
+  vtIsBusyExecutingACommand              (2),
+  vtIsBusyExecutingAMacro                (3),
+  vtIsBusyParsingAnObjectPool            (4),
+  reserved                               (5),
+  auxiliaryControlsLearnModeActive       (6),
+  vtIsOutOfMemory                        (7)}
 with {variant "PADDING(octet)"}
 
 type record VTStatusReq
 {
-    VTfunction vtfunction (254),
-    OCT1 	      sourceAddressOfActiveWorkingSetMaster,
-    OCT2 	      objectIDOfTheVisibleDataAlarmMaskOfTheActiveWorkingSet,
-    OCT2 	      objectIDOfTheVisibleSoftKeyMaskOfTheActiveWorkingSet,
-    e_BusyCodes       vtBusyCodes,
-    OCT1              vtFunctionCode
+  VTfunction vtfunction (254),
+  OCT1 	      sourceAddressOfActiveWorkingSetMaster,
+  OCT2 	      objectIDOfTheVisibleDataAlarmMaskOfTheActiveWorkingSet,
+  OCT2 	      objectIDOfTheVisibleSoftKeyMaskOfTheActiveWorkingSet,
+  e_BusyCodes       vtBusyCodes,
+  OCT1              vtFunctionCode
 } with { variant "" };
 
 type record WorkingSetMaintenanceBitMask {
-    boolean InitiatingWorkingSetMaintenance,
-    boolean reserved2 (false),
-    boolean reserved3 (false),
-    boolean reserved4 (false),
-    boolean reserved5 (false),
-    boolean reserved6 (false),
-    boolean reserved7 (false)
+  boolean initiatingWorkingSetMaintenance,
+  boolean reserved1 (false),
+  boolean reserved2 (false),
+  boolean reserved3 (false),
+  boolean reserved4 (false),
+  boolean reserved5 (false),
+  boolean reserved6 (false),
+  boolean reserved7 (false)
 } with { variant "" };
 
 type enumerated e_WorkingSetMaintenanceVersionNumber { 
-    reserved0               (0),
-    reserved1               (1),
-    reserved2               (2),
-    compliantWithVTVersion3 (3),
-    compliantWithVTVersion4 (4),
-    compliantWithVTVersion5 (5),
-    compliantWithVTVersion2 (255)}
+  reserved0               (0),
+  reserved1               (1),
+  reserved2               (2),
+  compliantWithVTVersion3 (3),
+  compliantWithVTVersion4 (4),
+  compliantWithVTVersion5 (5),
+  compliantWithVTVersion2 (255)}
 with {variant "PADDING(octet)"}
+
+
+type OCT7 VersionLabel7Char
+
+type record LoadVersionReq
+{
+  VTfunction vtfunction (209),
+  VersionLabel7Char versionLabel
+} with { variant "" };
+
+type record LoadVersionRes_errorCodesType {
+  boolean fileSystemErrorOrPoolDataCorruption,
+  boolean versionLabelIsNotCorrectOrVersionLabeUnknown,
+  boolean insufficientMemoryAvailable,
+  boolean anyOtherError,
+  boolean reserved5,
+  boolean reserved6,
+  boolean reserved7,
+  boolean reserved8
+} with {variant ""}
+
+type record LoadVersionRes
+{
+  VTfunction vtfunction (209),
+  OCT1    reserved2  ('FF'O),
+  OCT1    reserved3  ('FF'O),
+  OCT1    reserved4  ('FF'O),
+  OCT1    reserved5  ('FF'O),
+  LoadVersionRes_errorCodesType    errorCodes,
+  OCT1    reserved7  ('FF'O),
+  OCT1    reserved8  ('FF'O)
+} with { variant "" };
+
+type record GetVersionsReq
+{
+  VTfunction vtfunction (223),
+  OCT1    reserved2  ('FF'O),
+  OCT1    reserved3  ('FF'O),
+  OCT1    reserved4  ('FF'O),
+  OCT1    reserved5  ('FF'O),
+  OCT1    reserved6  ('FF'O),
+  OCT1    reserved7  ('FF'O),
+  OCT1    reserved8  ('FF'O)
+} with { variant "" };
+
+type record GetVersionsRes
+{
+  VTfunction vtfunction (223),
+  INT1              numberOfVersionStrings,
+  VersionLabel7Char versionStrings
+}
+with{
+  variant (numberOfVersionStrings) "LENGTHTO(versionStrings)";
+  variant (numberOfVersionStrings) "UNIT(elements)"
+}
 
 type record WorkingSetMaintenanceReq
 {
-    VTfunction vtfunction (255),
-    WorkingSetMaintenanceBitMask         bitMask,
-    e_WorkingSetMaintenanceVersionNumber versionNumber,
-    OCT1    reserved4  ('FF'O),
-    OCT1    reserved5  ('FF'O),
-    OCT1    reserved6  ('FF'O),
-    OCT1    reserved7  ('FF'O),
-    OCT1    reserved8  ('FF'O)
+  VTfunction vtfunction (255),
+  WorkingSetMaintenanceBitMask         bitMask,
+  e_WorkingSetMaintenanceVersionNumber versionNumber,
+  OCT1    reserved4  ('FF'O),
+  OCT1    reserved5  ('FF'O),
+  OCT1    reserved6  ('FF'O),
+  OCT1    reserved7  ('FF'O),
+  OCT1    reserved8  ('FF'O)
 } with { variant "" };
 
-type record DummyVTStatusRes
+type union VT2ECU
 {
-    VTfunction vtfunction (254)
-} with { variant "" };
-
-type union TopLevelMessage_VT2ECU_PDU
-{
-// put all VT2ECU request messages here
-    VTStatusReq                    vtStatusReq,
-// put all VT2ECU response messages here
-    GetMemoryRes                   getMemoryRes,
-    GetNumberOfSoftKeysRes         getNumberOfSoftKeysRes,
-    GetTextFontDataRes             getTextFontDataRes,
-    GetHardwareRes                 getHardwareRes,
-    GetSupportedWidecharsRes       getSupportedWidecharsRes,
-    GetWindowMaskDataRes           getWindowMaskDataRes,
-    GetSupportedObjectsRes         getSupportedObjectsRes
+  // put all VT2ECU request messages here
+  SoftKeyActivationReq           softKeyActivationReq,
+  ButtonActivationReq            buttonActivationReq,
+  PointingEventReq               pointingEventReq,
+  //VTSelectInputObjectReq_v3AndPrior vtSelectInputObjectReq,  // for v3 and prior
+  VTSelectInputObjectReq_v4AndLater vtSelectInputObjectReq,    // for v4 and later
+  VTChangeNumericValueReq        vtChangeNumericValueReq,
+  VTOnUserLayoutHideShowReq      vtOnUserLayoutHideShowReq,
+  VTStatusReq                    vtStatusReq,
+  // put all VT2ECU response messages here
+  HideShowObjectRes              hideShowObjectRes,
+  SelectInputObjectRes           selectInputObjectRes,  
+  ControlAudioSignalRes          controlAudioSignalRes,
+  ChangeNumericValueRes          changeNumericValueRes,
+  ChangeActiveMaskRes            changeActiveMaskRes,
+  ChangeSoftKeyMaskRes           changeSoftKeyMaskRes,
+  ChangeAttributeRes             changeAttributeRes,
+  DeleteObjectPoolRes            deleteObjectPoolRes,
+  ChangeStringValueRes           changeStringValueRes,
+  ChangeChildPositionRes         changeChildPositionRes,
+  GetMemoryRes                   getMemoryRes,
+  GetNumberOfSoftKeysRes         getNumberOfSoftKeysRes,
+  GetTextFontDataRes             getTextFontDataRes,
+  GetHardwareRes                 getHardwareRes,
+  GetSupportedWidecharsRes       getSupportedWidecharsRes,
+  GetWindowMaskDataRes           getWindowMaskDataRes,
+  GetSupportedObjectsRes         getSupportedObjectsRes,
+  LoadVersionRes                 loadVersionRes,
+  GetVersionsRes                 getVersionsRes
 }
 with {variant "TAG	(
-// put all VT2ECU request messages here
-    vtStatusReq, 	vtfunction = 254;
-// put all VT2ECU response messages here
-    getMemoryRes,                  vtfunction = 194;
-    getNumberOfSoftKeysRes,        vtfunction = 192;
-    getTextFontDataRes,            vtfunction = 195;
-    getHardwareRes,                vtfunction = 199;
-    getSupportedWidecharsRes,      vtfunction = 193;
-    getWindowMaskDataRes,          vtfunction = 196;
-    getSupportedObjectsRes,        vtfunction = 197;)"
+  // put all VT2ECU request messages here
+  softKeyActivationReq,          vtfunction =   0; 
+  buttonActivationReq,           vtfunction =   1;
+  pointingEventReq,              vtfunction =   2; 
+  vtSelectInputObjectReq,        vtfunction =   3;
+  vtChangeNumericValueReq,       vtfunction =   5;
+  vtOnUserLayoutHideShowReq,     vtfunction =   9;
+  vtStatusReq, 	                 vtfunction = 254;
+  // put all VT2ECU response messages here
+  hideShowObjectRes,             vtfunction = 160;
+  selectInputObjectRes,          vtfunction = 162; 
+  controlAudioSignalRes,         vtfunction = 163;  
+  changeNumericValueRes,         vtfunction = 168;
+  changeActiveMaskRes,           vtfunction = 173;
+  changeSoftKeyMaskRes,          vtfunction = 174; 
+  changeAttributeRes,            vtfunction = 175;
+  deleteObjectPoolRes,           vtfunction = 178;
+  changeStringValueRes,          vtfunction = 179;
+  changeChildPositionRes,        vtfunction = 180;
+  getMemoryRes,                  vtfunction = 192;
+  getNumberOfSoftKeysRes,        vtfunction = 194;
+  getTextFontDataRes,            vtfunction = 195;
+  getHardwareRes,                vtfunction = 199;
+  getSupportedWidecharsRes,      vtfunction = 193;
+  getWindowMaskDataRes,          vtfunction = 196;
+  getSupportedObjectsRes,        vtfunction = 197;
+  loadVersionRes,                vtfunction = 209;
+  getVersionsRes,                vtfunction = 223;)"
 } 
 
-type union TopLevelMessage_ECU2VT_PDU
+type union ECU2VT
 {
-// put all ECU2VT request messages here
-    GetMemoryReq                    getMemoryReq,
-    GetNumberOfSoftKeysReq          getNumberOfSoftKeysReq,
-    GetTextFontDataReq              getTextFontDataReq,
-    GetHardwareReq                  getHardwareReq,
-    GetSupportedWidecharsReq        getSupportedWidecharsReq,
-    GetWindowMaskDataReq            getWindowMaskDataReq,
-    GetSupportedObjectsReq          getSupportedObjectsReq,
-    WorkingSetMaintenanceReq        workingSetMaintenanceReq
-// put all ECU2VT response messages here
-    //Dummy_ECU2VT_Res                dummy_ECU2VT_Res
+  // put all ECU2VT request messages here
+  SoftKeyActivationRes           softKeyActivationRes,
+  ButtonActivationRes            buttonActivationRes,
+  PointingEventRes               pointingEventRes,
+  // VTSelectInputObjectRes_v4AndPrior  vtSelectInputObjectRes,   // for v4 and prior
+  VTSelectInputObjectRes_v5AndLater  vtSelectInputObjectRes,      // for v5 and later
+  VTChangeNumericValueRes        vtChangeNumericValueRes,
+  VTOnUserLayoutHideShowRes      vtOnUserLayoutHideShowRes,  
+  AuxiliaryInputType2StatusInd   auxiliaryInputType2StatusInd,   // Note: ECU2VT may not be the right addressing 
+  HideShowObjectReq              hideShowObjectReq,
+  SelectInputObjectReq           selectInputObjectReq,
+  ControlAudioSignalReq          controlAudioSignalReq,
+  ChangeNumericValueReq          changeNumericValueReq,
+  ChangeActiveMaskReq            changeActiveMaskReq,
+  ChangeSoftKeyMaskReq           changeSoftKeyMaskReq,
+  ChangeAttributeReq             changeAttributeReq,
+  DeleteObjectPoolReq            deleteObjectPoolReq,
+  ChangeStringValueReq           changeStringValueReq,
+  ChangeChildPositionReq         changeChildPositionReq,
+  GetMemoryReq                   getMemoryReq,
+  GetNumberOfSoftKeysReq         getNumberOfSoftKeysReq,
+  GetTextFontDataReq             getTextFontDataReq,
+  GetHardwareReq                 getHardwareReq,
+  GetSupportedWidecharsReq       getSupportedWidecharsReq,
+  GetWindowMaskDataReq           getWindowMaskDataReq,
+  GetSupportedObjectsReq         getSupportedObjectsReq,
+  LoadVersionReq                 loadVersionReq,
+  GetVersionsReq                 getVersionsReq,
+  WorkingSetMaintenanceReq       workingSetMaintenanceReq
+  // put all ECU2VT response messages here
+  //Dummy_ECU2VT_Res                dummy_ECU2VT_Res
 }
 with {variant "TAG	(
-// put all ECU2VT request messages here
-    getMemoryReq,                 vtfunction = 194;
-    getNumberOfSoftKeysReq,       vtfunction = 192;
-    getTextFontDataReq,           vtfunction = 195;
-    getHardwareReq,               vtfunction = 199;
-    getSupportedWidecharsReq,     vtfunction = 193;
-    getWindowMaskDataReq,         vtfunction = 196;
-    getSupportedObjectsReq,       vtfunction = 197;
-    workingSetMaintenanceReq,     vtfunction = 255;
-// put all ECU2VT response messages here
-    //dummy_ECU2VT_Res, 	          vtfunction = '00000000'B;
-    ) " 
-    } 
+  // put all ECU2VT request messages here
+  softKeyActivationRes,          vtfunction =   0; 
+  buttonActivationRes,           vtfunction =   1;
+  pointingEventRes,              vtfunction =   2;
+  vtSelectInputObjectRes,        vtfunction =   3;
+  vtChangeNumericValueRes,       vtfunction =   5;
+  vtOnUserLayoutHideShowRes,     vtfunction =   9;
+  auxiliaryInputType2StatusInd,  vtfunction =  38;
+  hideShowObjectReq,             vtfunction = 160;
+  selectInputObjectReq,          vtfunction = 162;
+  controlAudioSignalReq,         vtfunction = 163;
+  changeNumericValueReq,         vtfunction = 168;
+  changeActiveMaskReq,           vtfunction = 173;
+  changeSoftKeyMaskReq,          vtfunction = 174; 
+  changeAttributeReq,            vtfunction = 175;
+  deleteObjectPoolReq,           vtfunction = 178;
+  changeStringValueReq,          vtfunction = 179;
+  changeChildPositionReq,        vtfunction = 180;
+  getMemoryReq,                  vtfunction = 192;
+  getNumberOfSoftKeysReq,        vtfunction = 194;
+  getTextFontDataReq,            vtfunction = 195;
+  getHardwareReq,                vtfunction = 199;
+  getSupportedWidecharsReq,      vtfunction = 193;
+  getWindowMaskDataReq,          vtfunction = 196;
+  getSupportedObjectsReq,        vtfunction = 197;
+  loadVersionReq,                vtfunction = 209;
+  getVersionsReq,                vtfunction = 223;
+  workingSetMaintenanceReq,      vtfunction = 255;
+  // put all ECU2VT response messages here
+  //dummy_ECU2VT_Res, 	         vtfunction = 0;
+  ) " 
+} 
 
 } with { encode "RAW" }
+

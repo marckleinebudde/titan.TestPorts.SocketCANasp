@@ -11,12 +11,11 @@
 //  File:               Isobus.ttcn
 //  Description:        Encoder / Decoder for Isobus message frames
 //
-
+// Revision R1A
 
 module Isobus {
 import from General_Types all
 import from Can all
-import from IsobusMessageTypes all
 import from IsobusCMMessageTypes all
 import from IsobusNMMessageTypes all
 import from IsobusVTMessageTypes all
@@ -75,14 +74,17 @@ type record J1939mod { // Error & RTR Frames are not considered here
 
 
 type union AnyIsoBusPdu {
-  TopLevelMessage_VT2ECU_PDU vt2ecu,  // Message Virtual Terminal (VT) to ECU
-  TopLevelMessage_ECU2VT_PDU ecu2vt,   // Message ECU to Virtual Terminal (VT)
+  ETP_DT                     etp_dt,  // extended TP data transfer
+  ETP_CM                     etp_cm,  // extended TP connection management 
+  VT2ECU                     vt2ecu,  // Message Virtual Terminal (VT) to ECU
+  ECU2VT                     ecu2vt,  // Message ECU to Virtual Terminal (VT)
   RequestForAddressClaimed   requestForAddressClaimed,
-  TP_DT                      tp_dt,
-  TP_CM                      tp_cm,
-  CannotClaimSourceAddress cannotClaimSourceAddress,
-  AddressClaimed addressClaimed,
-  CommandedAddress commandedAddress
+  TP_DT                      tp_dt,   // TP data transfer
+  TP_CM                      tp_cm,   // TP connection management
+  NetworkMessage             networkMessage, // Network Message according ISO 11873-4
+  CannotClaimSourceAddress   cannotClaimSourceAddress,
+  AddressClaimed             addressClaimed,
+  CommandedAddress           commandedAddress
   // other upper layer isobus protocols like Task Comtroller are added here ...
 }
 with { variant "" }
@@ -97,16 +99,21 @@ type record CAN_frame_j1939mod {
   J1939mod            can_j1939,
   AnyIsoBusPdu        can_pdu 
 }with {
-  variant (can_pdu) "CROSSTAG( 
+  variant (can_pdu) "CROSSTAG(
+  etp_dt,                   can_j1939.comp = 'C70000'O;  //199
+  etp_cm,                   can_j1939.comp = 'C80000'O;  //200
   vt2ecu,                   can_j1939.comp = 'E60000'O;  //230
   ecu2vt,                   can_j1939.comp = 'E70000'O;  //231
   requestForAddressClaimed, can_j1939.comp = 'EA0000'O;  //234
-  tp_dt,                    can_j1939.comp = 'EB0000'O;  
-  tp_cm,                    can_j1939.comp = 'EC0000'O;  
-  cannotClaimSourceAddress, can_j1939.comp = 'EEFFFE'O; //238 all and conjuction needed!!!!!!
+  tp_dt,                    can_j1939.comp = 'EB0000'O;  //235
+  tp_cm,                    can_j1939.comp = 'EC0000'O;  //236
+  networkMessage,           can_j1939.comp = 'ED0000'O;  //237
+  cannotClaimSourceAddress, can_j1939.comp = 'EEFFFE'O;  //238 all and conjuction needed!!!!!!
   addressClaimed,           can_j1939.comp = 'EEFF00'O;  //238 all and conjuction needed!!!!!!
   commandedAddress,         can_j1939.comp = 'FED800'O)" //254 all and conjuction needed!!!!!!
 }
+
+
 
 //---------------------------------------------------------------------------------------
 function j1939frame2can(in CAN_frame_j1939 p_can_frame_j1939, in Priority p_priority, in DestinationAddress p_da, in SourceAddress p_sa) return CAN_frame {
@@ -125,22 +132,43 @@ function pdu1_j1939id2canid(in J1939 p_j1939, in Priority p_priority, in Destina
     ((p_j1939.res) << 25) or4b (int2bit(bit2int(p_priority), 32) << 26))
   return v_can_id
 }
+
+/*
+function j1939id2canid(in J1939 p_j1939) return CAN_id{
+var CAN_id v_can_id
+v_can_id := (p_j1939.sa << 0) or4b (p_j1939.ps << 8) or4b (p_j1939.pf << 16) or4b bit2oct(p_j1939.dp << 24) or4b 
+bit2oct(p_j1939.res << 25) or4b bit2oct(p_j1939.prio << 26)
+return v_can_id
+}
+*/
+
+function j1939id2canid(in J1939 p_j1939) return CAN_id{
+  var CAN_id v_can_id
+
+  v_can_id := int2oct(
+    oct2int(p_j1939.sa) + oct2int(p_j1939.ps)*256 + oct2int(p_j1939.pf) * 256 * 256 + 
+    bit2int(p_j1939.dp) * 256 * 256 * 256 + bit2int(p_j1939.res) * 256 * 256 * 256 * 2 + 
+    bit2int(p_j1939.prio) * 256 * 256 * 256 * 2 * 2, 
+    4 )
+  return v_can_id
+}
+
 //---------------------------------------------------------------------------------------
 function can2j1939frame(CAN_frame p_can_frame) return CAN_frame_j1939 {
   //--------------------------------------------------------------------------------------- 
   var CAN_frame_j1939 v_can_frame_j1939
 
-  log("can_id", p_can_frame.can_id)  
-  log("can_pdu", p_can_frame.can_pdu)
+  //log("can_id", p_can_frame.can_id)  
+  //log("can_pdu", p_can_frame.can_pdu)
 
   v_can_frame_j1939:=f_decode_CAN_frame_j1939(p_can_frame.can_id& p_can_frame.can_pdu)
 
-  log("Higher layer octet pdustring: ", v_can_frame_j1939)
+  //log("Higher layer octet pdustring: ", v_can_frame_j1939)
   return v_can_frame_j1939
 }
 
 function canid2j1939(in CAN_id p_can_id) return J1939 {
-//--------------------------------------------------------------------------------------- 
+  //--------------------------------------------------------------------------------------- 
 
   var bitstring v_can_id_bitstring:= oct2bit(p_can_id)
   var J1939 v_j1939
@@ -151,8 +179,8 @@ function canid2j1939(in CAN_id p_can_id) return J1939 {
   v_j1939.pf   :=p_can_id[1];//(p_can_id and4b ISOBUS_PDUFORMAT_MASK) >> 2   // shift 16 bits = 2 octets
   v_j1939.ps   :=p_can_id[2];// (p_can_id and4b ISOBUS_PDUSPECIFIC_MASK) >> 1 // shift  8 bits = 1 octet
   v_j1939.sa   :=p_can_id[3];//(p_can_id and4b ISOBUS_SOURCEADDRESS_MASK)
-  
-   return v_j1939
+
+  return v_j1939
 }
 
 //********************************************************************************-
@@ -290,7 +318,6 @@ function f_encode_CAN_frame_j1939(in CAN_frame_j1939 pdu) return octetstring
 function f_decode_CAN_frame_j1939(in octetstring data) return CAN_frame_j1939
 //---------------------------------------------------------------------------
 {
-
   return f_map_mod2frame(decode_CAN_frame_j1939mod(f_insert_aux_hdr(data)))
 
 
@@ -298,3 +325,4 @@ function f_decode_CAN_frame_j1939(in octetstring data) return CAN_frame_j1939
 
 
 } with { encode "RAW" } 
+

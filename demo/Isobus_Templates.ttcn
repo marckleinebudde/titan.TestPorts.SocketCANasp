@@ -1,13 +1,3 @@
-/* Copyright (c) 2010, 2016  Ericsson AB
-* All rights reserved. This program and the accompanying materials
-* are made available under the terms of the Eclipse Public License v1.0
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v10.html
-*
-* Contributors:
-* Michael Josenhans
-******************************************************************************/
-
 module Isobus_Templates {
 
 import from IsobusMessageTypes all
@@ -16,7 +6,7 @@ import from Isobus all
 import from General_Types all
 
 
-template TopLevelMessage_ECU2VT_PDU t_GetMemoryReqX( INT3 p_memoryRequired) := {
+template ECU2VT t_GetMemoryReqX( INT3 p_memoryRequired) := {
   getMemoryReq := {
     vtfunction                      := 194,
     reserved2                       := 'FF'O,
@@ -26,25 +16,25 @@ template TopLevelMessage_ECU2VT_PDU t_GetMemoryReqX( INT3 p_memoryRequired) := {
   }
 };
 
-template AnyIsoBusPdu t_ecu2vt(template TopLevelMessage_ECU2VT_PDU t_Message) := {
+template AnyIsoBusPdu t_ecu2vt(template ECU2VT t_Message) := {
   ecu2vt := t_Message
 };
 
-template AnyIsoBusPdu t_vt2ecu(template TopLevelMessage_VT2ECU_PDU t_Message) := {
+template AnyIsoBusPdu t_vt2ecu(template VT2ECU t_Message) := {
   vt2ecu := t_Message
 };
 
 template AnyIsoBusPdu t_GetMemoryReq_pdu(INT3 p_memoryRequired) := {
-     ecu2vt := {getMemoryReq := t_GetMemoryReq(p_memoryRequired)}
+  ecu2vt := {getMemoryReq := t_GetMemoryReq(p_memoryRequired)}
 }
 
 
 template GetMemoryReq t_GetMemoryReq(INT3 p_memoryRequired) := {
-    vtfunction                    := 194,
-    reserved2                     := 'FF'O,
-    memoryRequired                := p_memoryRequired,
-    reserved7                     := 'FF'O,
-    reserved8                     := 'FF'O
+  vtfunction                    := 194,
+  reserved2                     := 'FF'O,
+  memoryRequired                := p_memoryRequired,
+  reserved7                     := 'FF'O,
+  reserved8                     := 'FF'O
 }
 
 template GetMemoryRes t_GetMemoryRes(e_GetMemoryResVersionNumber p_versionNumber, e_GetMemoryResStatus p_status) := {
@@ -71,4 +61,26 @@ template GetSupportedWidecharsRes t_GetSupportedWidecharsRes(OCT2 p_firstWideCha
   numberOfRanges              := p_numberOfRanges, 
   wideCharRangeArray          := p_wideCharRangeArray
 }
+
+
+template AnyIsoBusPdu t_WorkingSetMaintenanceReq_pdu(
+  WorkingSetMaintenanceBitMask p_bitMask, 
+  e_WorkingSetMaintenanceVersionNumber p_versionNumber) := {
+  ecu2vt := {workingSetMaintenanceReq := t_WorkingSetMaintenanceReq(p_bitMask, p_versionNumber)}
 }
+
+template WorkingSetMaintenanceReq t_WorkingSetMaintenanceReq(
+  WorkingSetMaintenanceBitMask p_bitMask, 
+  e_WorkingSetMaintenanceVersionNumber p_versionNumber) := {
+  vtfunction                    := 255,
+  bitMask                       := p_bitMask,
+  versionNumber                 := p_versionNumber,    
+  reserved4                     := 'FF'O,
+  reserved5                     := 'FF'O,
+  reserved6                     := 'FF'O,
+  reserved7                     := 'FF'O,
+  reserved8                     := 'FF'O
+}
+
+}
+

@@ -1,12 +1,7 @@
-/* Copyright (c) 2010, 2016  Ericsson AB
-* All rights reserved. This program and the accompanying materials
-* are made available under the terms of the Eclipse Public License v1.0
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v10.html
-*
+/*
 * Contributors:
 * Michael Josenhans
-******************************************************************************/
+*/
 
 module IsobusNMMessageTypes {
 
@@ -17,7 +12,38 @@ type OCT1 DestinationAddress
 
 type OCT1 PDUFormat
 type OCT1 SourceAddress
-type OCT8 NAME 
+//type OCT8 NAME 
+
+type bitstring Priority length(6)
+with {
+  variant "ALIGN(left)";
+  variant "FIELDLENGTH(6)"
+}
+
+type BIT1  SelfConfigurableAddressBits
+type BIT3  IndustryGroupBits
+type BIT4  DeviceClassInstanceBits
+type BIT7  DeviceClassBits
+type BIT1  ReservedBits
+type BIT8  FunctionBits
+type BIT5  FunctionInstanceBits
+type BIT3  ECUInstanceBits
+type BIT11 ManufacturerCodeBits
+type BIT21 IdentityNumberBits
+
+type record NAME {
+  SelfConfigurableAddressBits selfConfigurableAddressValue,
+  IndustryGroupBits           industryGroupValue,
+  DeviceClassInstanceBits     deviceClassInstanceValue,
+  DeviceClassBits             deviceClassValue,
+  ReservedBits                reserveValued,
+  FunctionBits                functionValue,
+  FunctionInstanceBits        functionInstanceValue,
+  ECUInstanceBits             ecuInstancceValue,
+  ManufacturerCodeBits        manufacturerCodeValue,
+  IdentityNumberBits          identityNumberBits
+} with { variant "FIELDORDER(msb)" }
+
 
 type record CannotClaimSourceAddress
 {
@@ -40,4 +66,397 @@ type record CommandedAddress {
   SourceAddress newSourceAddress
 } with { variant "" }
 
+// --------- NetworkMessage -------------
+
+type INT1 Function
+
+type record N_MFDB_Request 
+{
+  Function                                  MsgFunction (0),
+  PortPair                                  portPair,  
+  OCT1                                      reserved3  ('FF'O),
+  OCT1                                      reserved4  ('FF'O),
+  OCT1                                      reserved5  ('FF'O),
+  OCT1                                      reserved6  ('FF'O),
+  OCT1                                      reserved7  ('FF'O),
+  OCT1                                      reserved8  ('FF'O)
+} with {variant "" };
+
+type record N_MFDB_Response
+{
+  Function                                  MsgFunction (1),
+  PortPair                                  portPair,  
+  e_FilterMode                              filterMode,
+  record length (1..infinity) of PGN        pgnEntries
+} with {variant "" };
+
+
+type record N_MFDB_Add
+{
+  Function                                  MsgFunction (2),
+  PortPair                                  portPair,  
+  record length (1..infinity) of PGN        pgnEntries
+} with {variant "" };
+
+type record N_MFDB_Delete
+{
+  Function                                  MsgFunction (3),
+  PortPair                                  portPair,  
+  record length (1..infinity) of PGN        pgnEntries
+} with {variant "" };
+
+type record N_MFDB_Clear 
+{
+  Function                                  MsgFunction (4),
+  PortPair                                  portPair,  
+  OCT1                                      reserved3  ('FF'O),
+  OCT1                                      reserved4  ('FF'O),
+  OCT1                                      reserved5  ('FF'O),
+  OCT1                                      reserved6  ('FF'O),
+  OCT1                                      reserved7  ('FF'O),
+  OCT1                                      reserved8  ('FF'O)
+} with {variant "" };
+
+type record N_MFDB_Create_Entry
+{
+  Function                                  MsgFunction (6),
+  PortPair                                  portPair,  
+  e_FilterMode                              filterMode,
+  record length (1..infinity) of PGN        pgnEntries
+} with {variant "" };
+
+type record PGNEntry
+{
+  INT1                                      maxTransferRate,
+  PGN                                       pgn,
+  NAME                                      name,
+  OCT8                                      nameQualifier
+} with {variant "" };
+
+type record N_MFDBNQ_Add
+{
+  Function                                  MsgFunction (7),
+  PortPair                                  portPair,  
+  e_FilterMode                              filterMode,
+  OCT1                                      reserved4  ('FF'O),  
+  record length (1..infinity) of PGNEntry   pgnEntries
+} with {variant "" };
+
+
+type record N_NT_Request 
+{
+  Function                                  MsgFunction (64),
+  PortNibble                                portPair,  
+  OCT1                                      reserved3  ('FF'O),
+  OCT1                                      reserved4  ('FF'O),
+  OCT1                                      reserved5  ('FF'O),
+  OCT1                                      reserved6  ('FF'O),
+  OCT1                                      reserved7  ('FF'O),
+  OCT1                                      reserved8  ('FF'O)
+} with {variant "" };
+
+type record N_NT_Response 
+{
+  Function                                      MsgFunction (65),
+  PortNibble                                    portPair,  
+  record length (1..infinity) of SourceAddress  SourceAddressEntries
+} with {variant "" };
+
+type record N_NTX_Request 
+{
+  Function                                  MsgFunction (66),
+  PortNibble                                portPair,  
+  OCT1                                      reserved3  ('FF'O),
+  OCT1                                      reserved4  ('FF'O),
+  OCT1                                      reserved5  ('FF'O),
+  OCT1                                      reserved6  ('FF'O),
+  OCT1                                      reserved7  ('FF'O),
+  OCT1                                      reserved8  ('FF'O)
+} with {variant "" };
+
+
+type record SA_NAME_pair
+{
+  SourceAddress                             sourceAddress,
+  NAME                                      name
+} with {variant "" };
+
+type record N_NTX_Response 
+{
+  Function                                    MsgFunction (67),
+  PortNibble                                  portPair,  
+  INT1                                        numberOfReportedPorts,
+  record length (1..infinity) of SA_NAME_pair sourceaddress_NAME_pairs
+} with {
+  variant (numberOfReportedPorts) "LENGTHTO(sourceaddress_NAME_pairs)";
+  variant (numberOfReportedPorts) "UNIT(elements)"
+}
+
+type enumerated e_ParametricIdentifier { 
+  requestAllParameters                         (0),
+  buffersize                                   (1),
+  maximumFilterDatabaseSize                    (2),
+  numberOfFilterDatabaseEntries                (3),
+  maximumNumberOfMessagesReceivedPerSecond     (4),
+  maximumNumberOfMessagesForwardedPerSecond    (5),
+  maximumNumberOfMessagesFilteredPerSecond     (6),
+  maximumTransitDelayTime_ms                   (7),
+  averageTransitDelayTime_ms                   (8),
+  numberOfMessagesLostDueToBufferOverflow      (9),
+  numberOfMessagesWithExcessTransitDelayTime  (10),
+  averageNumberOfMessagesReceivedPerSecond    (11),
+  averageNumberOfMessagesForwardedPerSecond   (12),
+  averageNumberOfMessagesFilteredPerSecond    (13),
+  uptimeSinceLastPowerOnReset_s               (14),
+  numberOfPorts                               (15),
+  networkInterconnectionUnitType              (16),
+  reserved                                   (255) // for message padding (workaround) 
+}
+with {variant "PADDING(octet)"}
+
+type record N_GP_Request 
+{
+  Function                                    MsgFunction (128),
+  record length (6..255) of e_ParametricIdentifier parametricIdentifiers
+  // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved within ParametricIdentifiers
+  // this is the easiest way to handle it
+} with {
+  variant "" }
+
+// begin not used
+// the following is currently not used as it is impossible to handle it with raw encoding
+type OCT2 Buffersize
+type OCT2 MaximumFilterDatabaseSize
+type OCT2 NumberOfFilterDatabaseEntries
+type OCT2 MaximumNumberOfMessagesReceivedPerSecond
+type OCT2 MaximumNumberOfMessagesForwardedPerSecond
+type OCT2 MaximumNumberOfMessagesFilteredPerSecond
+type OCT2 MaximumTransitDelayTime_ms
+type OCT2 AverageTransitDelayTime_ms
+type OCT2 NumberOfMessagesLostDueToBufferOverflow
+type OCT2 NumberOfMessagesWithExcessTransitDelayTime
+type OCT2 AverageNumberOfMessagesReceivedPerSecond
+type OCT2 AverageNumberOfMessagesForwardedPerSecond
+type OCT2 AverageNumberOfMessagesFilteredPerSecond
+type OCT4 UptimeSinceLastPowerOnReset_s
+type OCT1 NumberOfPorts
+type OCT1 NetworkInterconnectionUnitType
+type OCT1 Reserved ('FF'O)
+
+type union RequestedParametric
+{
+  Buffersize                                 buffersize,
+  MaximumFilterDatabaseSize                  maximumFilterDatabaseSize,
+  NumberOfFilterDatabaseEntries              numberOfFilterDatabaseEntries,
+  MaximumNumberOfMessagesReceivedPerSecond   maximumNumberOfMessagesReceivedPerSecond,
+  MaximumNumberOfMessagesForwardedPerSecond  maximumNumberOfMessagesForwardedPerSecond,
+  MaximumNumberOfMessagesFilteredPerSecond   maximumNumberOfMessagesFilteredPerSecond,
+  MaximumTransitDelayTime_ms                 maximumTransitDelayTime_ms,
+  AverageTransitDelayTime_ms                 averageTransitDelayTime_ms,
+  NumberOfMessagesLostDueToBufferOverflow    numberOfMessagesLostDueToBufferOverflow,
+  NumberOfMessagesWithExcessTransitDelayTime numberOfMessagesWithExcessTransitDelayTime, 
+  AverageNumberOfMessagesReceivedPerSecond   averageNumberOfMessagesReceivedPerSecond,
+  AverageNumberOfMessagesForwardedPerSecond  averageNumberOfMessagesForwardedPerSecond,
+  AverageNumberOfMessagesFilteredPerSecond   averageNumberOfMessagesFilteredPerSecond,
+  UptimeSinceLastPowerOnReset_s              uptimeSinceLastPowerOnReset_s,
+  NumberOfPorts                              numberOfPorts,  
+  NetworkInterconnectionUnitType             networkInterconnectionUnitType,
+  Reserved                                   reserved
+} with {variant ""}
+
+// end not used
+
+type record N_GP_Response
+{
+  Function                                  MsgFunction (129),
+  OCT1                                      requestedParametrics [6 .. 255]
+  // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved ('FF'O) within RequestedParametrics
+  // this is the easiest way to handle it
+} with {
+  variant "" }
+
+type record N_GP_Reset_Statistics 
+{
+  Function                                  MsgFunction (130),
+  PortNibble                                portPair,  
+  OCT1                                      reserved3  ('FF'O),
+  OCT1                                      reserved4  ('FF'O),
+  OCT1                                      reserved5  ('FF'O),
+  OCT1                                      reserved6  ('FF'O),
+  OCT1                                      reserved7  ('FF'O),
+  OCT1                                      reserved8  ('FF'O)
+} with {variant "" };
+
+type record N_SP_Request 
+{
+  Function                                  MsgFunction (131),
+  PortPair                                  portPair, 
+  record length (5..255) of e_ParametricIdentifier parametricIdentifiers
+  // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved within ParametricIdentifiers
+  // this is the easiest way to handle it
+} with {
+  variant "" }
+  
+type record N_SP_Response
+{
+  Function                                  MsgFunction (132),
+  PortPair                                  portPair,  
+  OCT1                                      requestedParametrics [5 .. 255]
+  // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved ('FF'O) within RequestedParametrics
+  // this is the easiest way to handle it
+} with {
+  variant "" }
+  
+  
+  
+type record N_SP_Reset_Statistics 
+{
+  Function                                  MsgFunction (133),
+  PortPair                                  portPair, 
+  OCT1                                      reserved3  ('FF'O),
+  OCT1                                      reserved4  ('FF'O),
+  OCT1                                      reserved5  ('FF'O),
+  OCT1                                      reserved6  ('FF'O),
+  OCT1                                      reserved7  ('FF'O),
+  OCT1                                      reserved8  ('FF'O)
+} with {
+  variant "" }  
+
+
+type record N_OC_Request
+{
+  Function                                  MsgFunction (192),
+  PortPair                                  portPair,  
+  NAME                                      nameOfCF
+} with {
+  variant "" }
+
+type record N_CC_Request
+{
+  Function                                  MsgFunction (193),
+  PortPair                                  portPair,  
+  NAME                                      nameOfCF
+} with {
+  variant "" }  
+  
+type enumerated e_Status { 
+  failure                         (0),
+  success                         (1)
+}
+with {variant "PADDING(octet)"} 
+ 
+type enumerated e_FailureReasonCode { 
+  cannotFindCFwithNAME                         (0),
+  numberOfConnectionsToNAMEexceeded            (1),
+  numberOfConnectionsToNIUexceeded             (2),
+  busy                                         (3),
+  requestTypeNotSupported                      (4),
+  notAvailable                               (255)
+}
+with {variant "PADDING(octet)"}  
+  
+  
+type record N_OC_Response
+{
+  Function                                  MsgFunction (194),
+  PortPair                                  portPair, 
+  e_Status                                  status,
+  e_FailureReasonCode                       failureReasonCode 
+} with {
+  variant "" }  
+  
+type record N_CC_Response
+{
+  Function                                  MsgFunction (195),
+  PortPair                                  portPair, 
+  e_Status                                  status,
+  e_FailureReasonCode                       failureReasonCode 
+} with {
+  variant "" }    
+  
+type union NetworkMessage
+{
+  N_MFDB_Request                              n_MFDB_Request,        // CF to NIU
+  N_MFDB_Response                             n_MFDB_Response,       // NIU to CF
+  N_MFDB_Add                                  n_MFDB_Add,            // CF to NIU
+  N_MFDB_Delete                               n_MFDB_Delete,         // CF to NIU
+  N_MFDB_Clear                                n_MFDB_Clear,          // CF to NIU
+  N_MFDB_Create_Entry                         n_MFDB_Create_Entry,   // CF to NIU
+  N_MFDBNQ_Add                                n_MFDBNQ_Add,          // CF to NIU
+  N_NT_Request                                n_NT_Request,          // CF to NIU
+  N_NT_Response                               n_NT_Response,         // NIU to CF
+  N_NTX_Request                               n_NTX_Request,         // CF to NIU
+  N_NTX_Response                              n_NTX_Response,        // NIU to CF
+  N_GP_Request                                n_GP_Request,          // CF to NIU
+  N_GP_Response                               n_GP_Response,         // NIU to CF
+  N_GP_Reset_Statistics                       n_GP_Reset_Statistics, // CF to NIU
+  N_SP_Request                                n_SP_Request,          // CF to NIU
+  N_SP_Response                               n_SP_Response,         // NIU to CF
+  N_SP_Reset_Statistics                       n_SP_Reset_Statistics, // CF to NIU
+  N_OC_Request                                n_OC_Request,          // CF to NIU
+  N_OC_Response                               n_OC_Response,         // NIU to CF
+  N_CC_Request                                n_CC_Request,          // CF to NIU
+  N_CC_Response                               n_CC_Response          // NIU to CF    
+}
+with {variant "TAG	(
+  n_MFDB_Request,                        MsgFunction =   0;
+  n_MFDB_Response,                       MsgFunction =   1;
+  n_MFDB_Add,                            MsgFunction =   2;
+  n_MFDB_Delete,                         MsgFunction =   3;
+  n_MFDB_Clear,                          MsgFunction =   4;
+  n_MFDB_Create_Entry,                   MsgFunction =   6;
+  n_MFDBNQ_Add,                          MsgFunction =   7;
+  n_NT_Request,                          MsgFunction =  64;
+  n_NT_Response,                         MsgFunction =  65;
+  n_NTX_Request,                         MsgFunction =  66;
+  n_NTX_Response,                        MsgFunction =  67;
+  n_GP_Request,                          MsgFunction = 128;
+  n_GP_Response,                         MsgFunction = 129;
+  n_GP_Reset_Statistics,                 MsgFunction = 130;
+  n_SP_Request,                          MsgFunction = 131;
+  n_SP_Response,                         MsgFunction = 132;
+  n_SP_Reset_Statistics,                 MsgFunction = 133;
+  n_OC_Request,                          MsgFunction = 192;
+  n_OC_Response,                         MsgFunction = 193; // there is a specification inconsistency concerning this value 193 vs. 194
+  n_CC_Request,                          MsgFunction = 194; // there is a specification inconsistency concerning this value 194 vs. 193
+  n_CC_Response,                         MsgFunction = 195;  ) " 
+}
+
+type enumerated e_PortNumber { 
+  port_local                 (0),
+  port_1                     (1),
+  port_2                     (2),
+  port_3                     (3),
+  port_4                     (4),
+  port_5                     (5),
+  port_6                     (6),
+  port_7                     (7),
+  port_8                     (8),
+  port_9                     (9),
+  port_10                    (10),
+  port_11                    (11),
+  port_12                    (12),
+  port_13                    (13),
+  port_14                    (14),
+  port_global                (15)}
+with {variant "PADDING(nibble)" };
+
+type enumerated e_FilterMode { 
+  blockSpecificPGNs          (0),
+  passSecificPGNs            (1)}
+with {variant "PADDING(octet)" };
+
+type record PortPair
+{
+  e_PortNumber          fromPort,
+  e_PortNumber          toPort
+} with { variant "" }
+
+type record PortNibble
+{
+  e_PortNumber          portNumber,
+  HEX1                  reserved ('F'H)
+} with { variant "" }
+
 }with { encode "RAW" }
+
