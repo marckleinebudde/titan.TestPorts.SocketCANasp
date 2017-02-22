@@ -22,7 +22,7 @@ import from Can all
 import from Raw all
 import from CanError all
 
-testcase tc_can_raw_send_and_receive_frame() runs on MTC {
+testcase tc_can_raw_send_and_receive_can_frame() runs on MTC {
   var PTC v_ptc_rawSendInitiator := PTC.create("PTC1_ptc_rawSendInitiator") alive
   var PTC v_ptc_rawFrameReceiver := PTC.create("PTC2_ptc_rawFrameReceiver") alive
 
@@ -50,6 +50,45 @@ testcase tc_can_raw_send_and_receive_frame() runs on MTC {
 
   all component.done;
   log("MTC done")
+
+  disconnect(mtc:pt_sync, v_ptc_rawSendInitiator:pt_sync)
+  disconnect(mtc:pt_sync, v_ptc_rawFrameReceiver:pt_sync)
+
+  all component.kill;      
+}
+
+testcase tc_can_raw_send_and_receive_canfd_frame() runs on MTC {
+  var PTC v_ptc_rawSendInitiator := PTC.create("PTC1_ptc_rawSendInitiator") alive
+  var PTC v_ptc_rawFrameReceiver := PTC.create("PTC2_ptc_rawFrameReceiver") alive
+
+
+  f_addSyncSlaveSet(v_ptc_rawSendInitiator, v_PTCSet)
+  f_addSyncSlaveSet(v_ptc_rawFrameReceiver, v_PTCSet)
+  
+  connect(mtc:pt_sync, v_ptc_rawSendInitiator:pt_sync)
+  connect(mtc:pt_sync, v_ptc_rawFrameReceiver:pt_sync)
+
+  var SocketCAN_CAN_or_CAN_FD_frame v_canfd_frame_to_send
+  v_canfd_frame_to_send := {canfd_frame := 
+    {can_id := '00000015'O, 
+      can_flags := '10101010'B,
+      can_pdu := '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF'O}
+  }
+
+  v_ptc_rawSendInitiator.start(f_ptc_RawSendInitiator(e_testbody2, v_canfd_frame_to_send))
+  v_ptc_rawFrameReceiver.start(f_ptc_RawFrameReceiver(e_testbody3, v_canfd_frame_to_send))
+
+  var e_Phase v_phase
+
+  for(v_phase := c_firstPhase; v_phase < e_testcase_complete;v_phase := f_incMTCPhase(v_phase)) {
+    f_startPhase(v_phase)
+    log("MTC: ", v_phase)
+    f_awaitEndPhase(v_phase)
+  }
+
+  all component.done;
+  log("MTC done")
+
 
   disconnect(mtc:pt_sync, v_ptc_rawSendInitiator:pt_sync)
   disconnect(mtc:pt_sync, v_ptc_rawFrameReceiver:pt_sync)

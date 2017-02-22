@@ -171,7 +171,6 @@ function f_close_socket(in SocketCAN_socketid p_socket_id)
 runs on PTC_isotp_CT {
   pt_socketCAN.send(SocketCAN_close:{id:= p_socket_id});
 }
-
 function f_send_isotp_message(in SocketCAN_socketid p_socket_id, 
   in octetstring p_pdu)
 runs on PTC_isotp_CT{
