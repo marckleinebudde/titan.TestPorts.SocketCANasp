@@ -69,23 +69,27 @@ struct canfd_frame;
 #define CAN_MTU		(sizeof(struct can_frame))
 #endif  //CAN_MTU
 
+// comment out the following define, if your kernel does not have CANFD support
+#define CANFD_SUPPORT
+#ifdef  CANFD_SUPPORT
+
+// make sure CANFD_MTU is defined, as not defined in some older kernel versions.
 #ifndef	CANFD_MTU
 #define CANFD_MTU	(sizeof(struct canfd_frame))
 #endif  //CANFD_MTU
 
-// workaround, as canfd not defined in some older kernel versions
+// make sure CAN_FD_FRAME is defined, as not defined in some older kernel versions
 // and thus canfd frames can not be used for data transfer between 
-// kernel module and userspace.
-#ifdef	CANFD_MTU
-#define CANFD_FRAME_STRUCT_DEFINED             true
-#define RAW_CANFD_SUPPORT                      true
-#endif  //CANFD_MTU
+// kernel module and userspace
+#ifndef CAN_FD_FRAME
+#define CAN_FD_FRAME   0x0800
+#endif  //CAN_FD_FRAME
 
-// has to be defined in later kernel versions in bcm.h as #define CAN_FD_FRAME   0x0800
-#ifdef  CAN_FD_FRAME
-#define BCM_CANFD_SUPPORT                      true
-#endif
+#define CANFD_FRAME_STRUCT_DEFINED
+#define RAW_CANFD_SUPPORT
+#define BCM_CANFD_SUPPORT
 
+#endif  //CANFD_SUPPORT
 namespace SocketCAN__PortType {
 
 SocketCAN__PT_PROVIDER::SocketCAN__PT_PROVIDER(const char *par_port_name) :

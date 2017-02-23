@@ -76,18 +76,13 @@ Notes:
  
 -CAN RAW:
  CAN and CANFD has been implemented and tested.
- Depending on the availability of the C-code #define "CAN_FD_FRAME"
- in /usr/include/linux/can/bcm.h, CAN-FD support is enabled at compile time.
- If you kernel does not have CANFD support comment out the #define "CAN_FD_FRAME
+ Depending on the availability of the C-code #define CANFD_SUPPORT
+ in src/SocketCAN_PT.cc CAN-FD support is enabled at compile time.
+ If you kernel does not have CANFD support comment out the #define CANFD_SUPPORT
  the file "src/SocketCAN_PT.cc"
- The RAW setsockopt has path coverage. However no test coverage that insures
- the setsockopt functionality provided by the kernel is working correctly. 
- For this purpose in the future might be added additional test cases.
 
 -CAN BCM:
  TX_SETUP, TX_DELETE have been tested, TX_READ is known to fail test cases.
- Some tests have indicated, that that SocketCAN BCM does not support concurrently
- active BCM channels.
  The BCM has test coverage for TX_SETUP and TX_DELETE. 
  Return values other than the error code by the BCM are not yet supported.
 
