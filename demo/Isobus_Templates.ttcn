@@ -38,8 +38,14 @@ template GetMemoryReq t_GetMemoryReq(INT3 p_memoryRequired) := {
 }
 
 template GetMemoryRes t_GetMemoryRes(e_GetMemoryResVersionNumber p_versionNumber, e_GetMemoryResStatus p_status) := {
+  vtfunction                      := 194,
   versionNumber                   := p_versionNumber,
-  status                          := p_status
+  status                          := p_status,
+  reserved4                       := 'FF'O,
+  reserved5                       := 'FF'O,
+  reserved6                       := 'FF'O,
+  reserved7                       := 'FF'O,
+  reserved8                       := 'FF'O
 }
 
 template GetSupportedWidecharsReq t_GetSupportedWidecharsReq(e_Codeplane p_codeplane, OCT2 p_firstWideCharInInquiryRange, OCT2 p_lastWideCharInInquiryRange) := {
@@ -51,17 +57,18 @@ template GetSupportedWidecharsReq t_GetSupportedWidecharsReq(e_Codeplane p_codep
   reserved8                   := 'FF'O
 }
 
-template GetSupportedWidecharsRes t_GetSupportedWidecharsRes(OCT2 p_firstWideCharInInquiryRange, 
+template GetSupportedWidecharsRes t_GetSupportedWidecharsRes(e_Codeplane p_codeplane, OCT2 p_firstWideCharInInquiryRange, 
   OCT2 p_lastWideCharInInquiryRange,
   INT1 p_numberOfRanges, 
   WideCharRangeArray p_wideCharRangeArray) := 
 {
+  vtfunction                  := 193,
+  codeplane                   := p_codeplane,
   firstWideCharInInquiryRange := p_firstWideCharInInquiryRange,
   lastWideCharInInquiryRange  := p_lastWideCharInInquiryRange,
   numberOfRanges              := p_numberOfRanges, 
   wideCharRangeArray          := p_wideCharRangeArray
 }
-
 
 template AnyIsoBusPdu t_WorkingSetMaintenanceReq_pdu(
   WorkingSetMaintenanceBitMask p_bitMask, 

@@ -62,7 +62,7 @@ AR = ar
 ARFLAGS = 
 
 # Flags for the TTCN-3 and ASN.1 compiler:
-COMPILER_FLAGS = -lL
+COMPILER_FLAGS = -lL -e # added -e for codec compatiblity
 
 # Execution mode: (either ttcn3 or ttcn3-parallel)
 TTCN3_LIB = ttcn3-parallel
@@ -87,7 +87,8 @@ TTCN3_MODULES = ../src/Bcm.ttcn ../src/Can.ttcn ../src/CanError.ttcn ../src/Gene
 SocketCAN_BCM_test.ttcn ../src/SocketCAN_PortType.ttcn SocketCAN_RAW_test.ttcn ../src/SocketCAN_Templates.ttcn \
 ../src/SocketCAN_Types.ttcn SocketCANtest.ttcn Isobus.ttcn Isobustest.ttcn IsobusMessageTypes.ttcn \
 Isobus_Templates.ttcn IsobusNMMessageTypes.ttcn IsobusCMMessageTypes.ttcn IsobusVTMessageTypes.ttcn \
-Isotp.ttcn Isotptest.ttcn
+Isotp.ttcn Isotptest.ttcn \
+CAN_matrix_general_types.ttcn  CAN_matrix_test.ttcn  CAN_matrix.ttcn My_can_matrix.ttcn My_canfd_matrix.ttcn
 
 # ASN.1 modules of this project:
 ASN1_MODULES =
@@ -98,7 +99,8 @@ GENERATED_SOURCES = Bcm.cc Can.cc CanError.cc General_Types.cc Raw.cc \
 SocketCAN_BCM_test.cc SocketCAN_PortType.cc SocketCAN_RAW_test.cc SocketCAN_Templates.cc \
 SocketCAN_Types.cc SocketCANtest.cc Isobus.cc Isobustest.cc IsobusMessageTypes.cc \
 Isobus_Templates.cc IsobusNMMessageTypes.cc IsobusCMMessageTypes.cc IsobusVTMessageTypes.cc \
-Isotp.cc Isotptest.cc
+Isotp.cc Isotptest.cc \
+CAN_matrix_general_types.cc  CAN_matrix_test.cc  CAN_matrix.cc My_can_matrix.cc My_canfd_matrix.cc
 
 GENERATED_HEADERS = $(GENERATED_SOURCES:.cc=.hh)
 

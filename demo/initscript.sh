@@ -18,6 +18,8 @@ sudo modprobe vcan
 
 # Setup of virtual can vcan0
 sudo ip link add dev vcan0 type vcan
+# set it up at as a canfd can interface
+sudo ip link set vcan0 mtu 72
 sudo ip link set vcan0 up
 
 # Setup of virtual can vcan1

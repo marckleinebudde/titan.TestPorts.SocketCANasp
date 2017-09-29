@@ -72,11 +72,16 @@ template SocketCAN_receive_CAN_or_CAN_FD_frame a_SocketCAN_receive_CAN_frame(
 template SocketCAN_receive_CAN_or_CAN_FD_frame a_SocketCAN_receive_CAN_FD_frame(
   template SocketCAN_socketid p_id, 
   template CAN_id p_can_id,
+  template CAN_flags p_can_flags,
   template CAN_PDU p_can_pdu) := { 
   // recieved CAN or CAN FD frame
   id        := p_id,
   ifr       := ?,
-  frame     := {canfd_frame := {can_id := p_can_id, can_pdu := p_can_pdu}}, 
+  frame     := {canfd_frame := 
+        {
+        can_id := p_can_id, 
+        can_flags := p_can_flags, 
+        can_pdu := p_can_pdu}}, 
   timestamp := ?
 }
 
@@ -105,4 +110,3 @@ a_SocketCAN_setsockopt_result(template SocketCAN_Result p_result) := {
 }
 
 }
-

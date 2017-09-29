@@ -19,12 +19,11 @@ http%3A%2F%2Fwww.can-cia.de%2Ffileadmin%2Fresources%2Fdocuments%2Fproceedings%2F
 http://www.can-cia.de/fileadmin/resources/documents/proceedings/2012_hartkopp.pdf
 http://v2.can-newsletter.org/uploads/media/raw/46c15d02e1fdd3b04e671693ec548ff7.pdf
 
-# See file: src/initscript.sh:
+# See file: demo/initscript.sh:
 
 #--------------------------------------
 #!/bin/bash
-# based on ideas from: 
-# 
+
 
 # create a virtual can interface:
 
@@ -32,9 +31,19 @@ sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
 sudo ip link set vcan0 up
 
-# or create a physical can interface
+#!/bin/bash
 
-#sudo ip link set can0 up type can bitrate 1000000
+# Add vcan module to kernel
+sudo modprobe vcan
+
+# Setup of virtual can vcan0
+sudo ip link add dev vcan0 type vcan
+# set it up at as a canfd capable can interface
+sudo ip link set vcan0 mtu 72
+sudo ip link set vcan0 up
+
+# or create a physical can interface
+# sudo ip link set can0 up type can bitrate 1000000
 
 ifconfig
 
@@ -48,11 +57,13 @@ source demo/initscript.sh
 
 make clean; make
 
-ttcn3_start SocketCAN client.cfg
+ttcn3_start SocketCAN SocketCAN.cfg
+or 
+ttcn3_start SocketCAN CAN_matrix_test.cfg
 
 or to run a certain testcase:
 
-ttcn3_start SocketCAN client.cfg  SocketCANtest.tc_can_raw1 SocketCANtest.tc_can_bcm1
+ttcn3_start SocketCAN SocketCAN.cfg  SocketCAN_RAW_test.tc_can_raw_send_and_receive_can_frame SocketCAN_RAW_test.tc_can_raw_setsockopt_CAN_RAW_FILTER
 
 Review the newly created log files in the src directory
 and use e.g. Wireshark to trace the CAN interfacce.

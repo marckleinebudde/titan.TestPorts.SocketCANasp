@@ -72,7 +72,7 @@ type INT1 Function
 
 type record N_MFDB_Request 
 {
-  Function                                  MsgFunction (0),
+  Function                                  msgFunction (0),
   PortPair                                  portPair,  
   OCT1                                      reserved3  ('FF'O),
   OCT1                                      reserved4  ('FF'O),
@@ -84,7 +84,7 @@ type record N_MFDB_Request
 
 type record N_MFDB_Response
 {
-  Function                                  MsgFunction (1),
+  Function                                  msgFunction (1),
   PortPair                                  portPair,  
   e_FilterMode                              filterMode,
   record length (1..infinity) of PGN        pgnEntries
@@ -93,21 +93,21 @@ type record N_MFDB_Response
 
 type record N_MFDB_Add
 {
-  Function                                  MsgFunction (2),
+  Function                                  msgFunction (2),
   PortPair                                  portPair,  
   record length (1..infinity) of PGN        pgnEntries
 } with {variant "" };
 
 type record N_MFDB_Delete
 {
-  Function                                  MsgFunction (3),
+  Function                                  msgFunction (3),
   PortPair                                  portPair,  
   record length (1..infinity) of PGN        pgnEntries
 } with {variant "" };
 
 type record N_MFDB_Clear 
 {
-  Function                                  MsgFunction (4),
+  Function                                  msgFunction (4),
   PortPair                                  portPair,  
   OCT1                                      reserved3  ('FF'O),
   OCT1                                      reserved4  ('FF'O),
@@ -119,7 +119,7 @@ type record N_MFDB_Clear
 
 type record N_MFDB_Create_Entry
 {
-  Function                                  MsgFunction (6),
+  Function                                  msgFunction (6),
   PortPair                                  portPair,  
   e_FilterMode                              filterMode,
   record length (1..infinity) of PGN        pgnEntries
@@ -135,7 +135,7 @@ type record PGNEntry
 
 type record N_MFDBNQ_Add
 {
-  Function                                  MsgFunction (7),
+  Function                                  msgFunction (7),
   PortPair                                  portPair,  
   e_FilterMode                              filterMode,
   OCT1                                      reserved4  ('FF'O),  
@@ -145,7 +145,7 @@ type record N_MFDBNQ_Add
 
 type record N_NT_Request 
 {
-  Function                                  MsgFunction (64),
+  Function                                  msgFunction (64),
   PortNibble                                portPair,  
   OCT1                                      reserved3  ('FF'O),
   OCT1                                      reserved4  ('FF'O),
@@ -157,14 +157,14 @@ type record N_NT_Request
 
 type record N_NT_Response 
 {
-  Function                                      MsgFunction (65),
+  Function                                      msgFunction (65),
   PortNibble                                    portPair,  
   record length (1..infinity) of SourceAddress  SourceAddressEntries
 } with {variant "" };
 
 type record N_NTX_Request 
 {
-  Function                                  MsgFunction (66),
+  Function                                  msgFunction (66),
   PortNibble                                portPair,  
   OCT1                                      reserved3  ('FF'O),
   OCT1                                      reserved4  ('FF'O),
@@ -183,7 +183,7 @@ type record SA_NAME_pair
 
 type record N_NTX_Response 
 {
-  Function                                    MsgFunction (67),
+  Function                                    msgFunction (67),
   PortNibble                                  portPair,  
   INT1                                        numberOfReportedPorts,
   record length (1..infinity) of SA_NAME_pair sourceaddress_NAME_pairs
@@ -216,7 +216,7 @@ with {variant "PADDING(octet)"}
 
 type record N_GP_Request 
 {
-  Function                                    MsgFunction (128),
+  Function                                    msgFunction (128),
   record length (6..255) of e_ParametricIdentifier parametricIdentifiers
   // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved within ParametricIdentifiers
   // this is the easiest way to handle it
@@ -268,8 +268,8 @@ type union RequestedParametric
 
 type record N_GP_Response
 {
-  Function                                  MsgFunction (129),
-  OCT1                                      requestedParametrics [6 .. 255]
+  Function                                  msgFunction (129),
+  octetstring                               requestedParametrics [6 .. 255]
   // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved ('FF'O) within RequestedParametrics
   // this is the easiest way to handle it
 } with {
@@ -277,7 +277,7 @@ type record N_GP_Response
 
 type record N_GP_Reset_Statistics 
 {
-  Function                                  MsgFunction (130),
+  Function                                  msgFunction (130),
   PortNibble                                portPair,  
   OCT1                                      reserved3  ('FF'O),
   OCT1                                      reserved4  ('FF'O),
@@ -289,7 +289,7 @@ type record N_GP_Reset_Statistics
 
 type record N_SP_Request 
 {
-  Function                                  MsgFunction (131),
+  Function                                  msgFunction (131),
   PortPair                                  portPair, 
   record length (5..255) of e_ParametricIdentifier parametricIdentifiers
   // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved within ParametricIdentifiers
@@ -299,9 +299,9 @@ type record N_SP_Request
   
 type record N_SP_Response
 {
-  Function                                  MsgFunction (132),
-  PortPair                                  portPair,  
-  OCT1                                      requestedParametrics [5 .. 255]
+  Function                                  msgFunction (132),
+  PortPair                                  portPair, 
+  octetstring                               requestedParametrics [5 .. 255]
   // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved ('FF'O) within RequestedParametrics
   // this is the easiest way to handle it
 } with {
@@ -311,7 +311,7 @@ type record N_SP_Response
   
 type record N_SP_Reset_Statistics 
 {
-  Function                                  MsgFunction (133),
+  Function                                  msgFunction (133),
   PortPair                                  portPair, 
   OCT1                                      reserved3  ('FF'O),
   OCT1                                      reserved4  ('FF'O),
@@ -325,7 +325,7 @@ type record N_SP_Reset_Statistics
 
 type record N_OC_Request
 {
-  Function                                  MsgFunction (192),
+  Function                                  msgFunction (192),
   PortPair                                  portPair,  
   NAME                                      nameOfCF
 } with {
@@ -333,7 +333,7 @@ type record N_OC_Request
 
 type record N_CC_Request
 {
-  Function                                  MsgFunction (193),
+  Function                                  msgFunction (193),
   PortPair                                  portPair,  
   NAME                                      nameOfCF
 } with {
@@ -358,7 +358,7 @@ with {variant "PADDING(octet)"}
   
 type record N_OC_Response
 {
-  Function                                  MsgFunction (194),
+  Function                                  msgFunction (194),
   PortPair                                  portPair, 
   e_Status                                  status,
   e_FailureReasonCode                       failureReasonCode 
@@ -367,7 +367,7 @@ type record N_OC_Response
   
 type record N_CC_Response
 {
-  Function                                  MsgFunction (195),
+  Function                                  msgFunction (195),
   PortPair                                  portPair, 
   e_Status                                  status,
   e_FailureReasonCode                       failureReasonCode 
@@ -399,27 +399,27 @@ type union NetworkMessage
   N_CC_Response                               n_CC_Response          // NIU to CF    
 }
 with {variant "TAG	(
-  n_MFDB_Request,                        MsgFunction =   0;
-  n_MFDB_Response,                       MsgFunction =   1;
-  n_MFDB_Add,                            MsgFunction =   2;
-  n_MFDB_Delete,                         MsgFunction =   3;
-  n_MFDB_Clear,                          MsgFunction =   4;
-  n_MFDB_Create_Entry,                   MsgFunction =   6;
-  n_MFDBNQ_Add,                          MsgFunction =   7;
-  n_NT_Request,                          MsgFunction =  64;
-  n_NT_Response,                         MsgFunction =  65;
-  n_NTX_Request,                         MsgFunction =  66;
-  n_NTX_Response,                        MsgFunction =  67;
-  n_GP_Request,                          MsgFunction = 128;
-  n_GP_Response,                         MsgFunction = 129;
-  n_GP_Reset_Statistics,                 MsgFunction = 130;
-  n_SP_Request,                          MsgFunction = 131;
-  n_SP_Response,                         MsgFunction = 132;
-  n_SP_Reset_Statistics,                 MsgFunction = 133;
-  n_OC_Request,                          MsgFunction = 192;
-  n_OC_Response,                         MsgFunction = 193; // there is a specification inconsistency concerning this value 193 vs. 194
-  n_CC_Request,                          MsgFunction = 194; // there is a specification inconsistency concerning this value 194 vs. 193
-  n_CC_Response,                         MsgFunction = 195;  ) " 
+  n_MFDB_Request,                        msgFunction =   0;
+  n_MFDB_Response,                       msgFunction =   1;
+  n_MFDB_Add,                            msgFunction =   2;
+  n_MFDB_Delete,                         msgFunction =   3;
+  n_MFDB_Clear,                          msgFunction =   4;
+  n_MFDB_Create_Entry,                   msgFunction =   6;
+  n_MFDBNQ_Add,                          msgFunction =   7;
+  n_NT_Request,                          msgFunction =  64;
+  n_NT_Response,                         msgFunction =  65;
+  n_NTX_Request,                         msgFunction =  66;
+  n_NTX_Response,                        msgFunction =  67;
+  n_GP_Request,                          msgFunction = 128;
+  n_GP_Response,                         msgFunction = 129;
+  n_GP_Reset_Statistics,                 msgFunction = 130;
+  n_SP_Request,                          msgFunction = 131;
+  n_SP_Response,                         msgFunction = 132;
+  n_SP_Reset_Statistics,                 msgFunction = 133;
+  n_OC_Request,                          msgFunction = 192;
+  n_OC_Response,                         msgFunction = 193; // there is a specification inconsistency concerning this value 193 vs. 194
+  n_CC_Request,                          msgFunction = 194; // there is a specification inconsistency concerning this value 194 vs. 193
+  n_CC_Response,                         msgFunction = 195;  ) " 
 }
 
 type enumerated e_PortNumber { 

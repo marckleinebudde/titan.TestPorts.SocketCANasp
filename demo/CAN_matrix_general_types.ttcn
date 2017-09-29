@@ -1,0 +1,158 @@
+module CAN_matrix_general_types {
+
+type integer INT1 (0..255) with { variant "FIELDLENGTH(8)" };
+type integer INT2 (0..65335) with { variant "FIELDLENGTH(16)" };
+type integer INT3 (0..16777215) with { variant "FIELDLENGTH(24)" };
+type integer INT4 (0..4294967295) with { variant "FIELDLENGTH(32)" };
+
+type integer INT_BIT1_MSB   (0..1)          with { variant "FIELDLENGTH(1), BITORDER(msb)" };
+type integer INT_BIT2_MSB   (0..3)          with { variant "FIELDLENGTH(2), BITORDER(msb)" };
+type integer INT_BIT3_MSB   (0..7)          with { variant "FIELDLENGTH(3), BITORDER(msb)" };
+type integer INT_BIT4_MSB   (0..15)         with { variant "FIELDLENGTH(4), BITORDER(msb)" };
+type integer INT_BIT5_MSB   (0..31)         with { variant "FIELDLENGTH(5), BITORDER(msb)" };
+type integer INT_BIT6_MSB   (0..63)         with { variant "FIELDLENGTH(6), BITORDER(msb)" };
+type integer INT_BIT7_MSB   (0..127)        with { variant "FIELDLENGTH(7), BITORDER(msb)" };
+type integer INT_BIT8_MSB   (0..255)        with { variant "FIELDLENGTH(8), BITORDER(msb)" };
+type integer INT_BIT9_MSB   (0..511)        with { variant "FIELDLENGTH(9), BITORDER(msb)" };
+type integer INT_BIT10_MSB  (0..1023)       with { variant "FIELDLENGTH(10),BITORDER(msb)" };
+type integer INT_BIT11_MSB  (0..2047)       with { variant "FIELDLENGTH(11),BITORDER(msb)" };
+type integer INT_BIT12_MSB  (0..4095)       with { variant "FIELDLENGTH(12),BITORDER(msb)" };
+type integer INT_BIT13_MSB  (0..8191)       with { variant "FIELDLENGTH(13),BITORDER(msb)" };
+type integer INT_BIT14_MSB  (0..16383)      with { variant "FIELDLENGTH(14),BITORDER(msb)" };
+type integer INT_BIT15_MSB  (0..32767)      with { variant "FIELDLENGTH(15),BITORDER(msb)" };
+type integer INT_BIT16_MSB  (0..65335)      with { variant "FIELDLENGTH(16),BITORDER(msb)" };
+type integer INT_BIT17_MSB  (0..131071)     with { variant "FIELDLENGTH(17),BITORDER(msb)" };
+type integer INT_BIT18_MSB  (0..262143)     with { variant "FIELDLENGTH(18),BITORDER(msb)" };
+type integer INT_BIT19_MSB  (0..524287)     with { variant "FIELDLENGTH(19),BITORDER(msb)" };
+type integer INT_BIT20_MSB  (0..1048575)    with { variant "FIELDLENGTH(20),BITORDER(msb)" };
+type integer INT_BIT21_MSB  (0..2097151)    with { variant "FIELDLENGTH(21),BITORDER(msb)" };
+type integer INT_BIT22_MSB  (0..4194303)    with { variant "FIELDLENGTH(22),BITORDER(msb)" };
+type integer INT_BIT23_MSB  (0..8388607)    with { variant "FIELDLENGTH(23),BITORDER(msb)" };
+type integer INT_BIT24_MSB  (0..16777215)   with { variant "FIELDLENGTH(24),BITORDER(msb)" };
+type integer INT_BIT25_MSB  (0..33554431)   with { variant "FIELDLENGTH(25),BITORDER(msb)" };
+type integer INT_BIT26_MSB  (0..67108863)   with { variant "FIELDLENGTH(26),BITORDER(msb)" };
+type integer INT_BIT27_MSB  (0..134217727)  with { variant "FIELDLENGTH(27),BITORDER(msb)" };
+type integer INT_BIT28_MSB  (0..268435455)  with { variant "FIELDLENGTH(28),BITORDER(msb)" };
+type integer INT_BIT39_MSB  (0..536870911)  with { variant "FIELDLENGTH(29),BITORDER(msb)" };
+type integer INT_BIT30_MSB  (0..1073741823) with { variant "FIELDLENGTH(30),BITORDER(msb)" };
+type integer INT_BIT31_MSB  (0..2147483647) with { variant "FIELDLENGTH(31),BITORDER(msb)" };
+type integer INT_BIT32_MSB  (0..4294967295) with { variant "FIELDLENGTH(32),BITORDER(msb)" };
+
+type integer INT_BIT1_LSB   (0..1)          with { variant "FIELDLENGTH(1), BITORDER(lsb)" };
+type integer INT_BIT2_LSB   (0..3)          with { variant "FIELDLENGTH(2), BITORDER(lsb)" };
+type integer INT_BIT3_LSB   (0..7)          with { variant "FIELDLENGTH(3), BITORDER(lsb)" };
+type integer INT_BIT4_LSB   (0..15)         with { variant "FIELDLENGTH(4), BITORDER(lsb)" };
+type integer INT_BIT5_LSB   (0..31)         with { variant "FIELDLENGTH(5), BITORDER(lsb)" };
+type integer INT_BIT6_LSB   (0..63)         with { variant "FIELDLENGTH(6), BITORDER(lsb)" };
+type integer INT_BIT7_LSB   (0..127)        with { variant "FIELDLENGTH(7), BITORDER(lsb)" };
+type integer INT_BIT8_LSB   (0..255)        with { variant "FIELDLENGTH(8), BITORDER(lsb)" };
+type integer INT_BIT9_LSB   (0..511)        with { variant "FIELDLENGTH(9), BITORDER(lsb)" };
+type integer INT_BIT10_LSB  (0..1023)       with { variant "FIELDLENGTH(10),BITORDER(lsb)" };
+type integer INT_BIT11_LSB  (0..2047)       with { variant "FIELDLENGTH(11),BITORDER(lsb)" };
+type integer INT_BIT12_LSB  (0..4095)       with { variant "FIELDLENGTH(12),BITORDER(lsb)" };
+type integer INT_BIT13_LSB  (0..8191)       with { variant "FIELDLENGTH(13),BITORDER(lsb)" };
+type integer INT_BIT14_LSB  (0..16383)      with { variant "FIELDLENGTH(14),BITORDER(lsb)" };
+type integer INT_BIT15_LSB  (0..32767)      with { variant "FIELDLENGTH(15),BITORDER(lsb)" };
+type integer INT_BIT16_LSB  (0..65335)      with { variant "FIELDLENGTH(16),BITORDER(lsb)" };
+type integer INT_BIT17_LSB  (0..131071)     with { variant "FIELDLENGTH(17),BITORDER(lsb)" };
+type integer INT_BIT18_LSB  (0..262143)     with { variant "FIELDLENGTH(18),BITORDER(lsb)" };
+type integer INT_BIT19_LSB  (0..524287)     with { variant "FIELDLENGTH(19),BITORDER(lsb)" };
+type integer INT_BIT20_LSB  (0..1048575)    with { variant "FIELDLENGTH(20),BITORDER(lsb)" };
+type integer INT_BIT21_LSB  (0..2097151)    with { variant "FIELDLENGTH(21),BITORDER(lsb)" };
+type integer INT_BIT22_LSB  (0..4194303)    with { variant "FIELDLENGTH(22),BITORDER(lsb)" };
+type integer INT_BIT23_LSB  (0..8388607)    with { variant "FIELDLENGTH(23),BITORDER(lsb)" };
+type integer INT_BIT24_LSB  (0..16777215)   with { variant "FIELDLENGTH(24),BITORDER(lsb)" };
+type integer INT_BIT25_LSB  (0..33554431)   with { variant "FIELDLENGTH(25),BITORDER(lsb)" };
+type integer INT_BIT26_LSB  (0..67108863)   with { variant "FIELDLENGTH(26),BITORDER(lsb)" };
+type integer INT_BIT27_LSB  (0..134217727)  with { variant "FIELDLENGTH(27),BITORDER(lsb)" };
+type integer INT_BIT28_LSB  (0..268435455)  with { variant "FIELDLENGTH(28),BITORDER(lsb)" };
+type integer INT_BIT39_LSB  (0..536870911)  with { variant "FIELDLENGTH(29),BITORDER(lsb)" };
+type integer INT_BIT30_LSB  (0..1073741823) with { variant "FIELDLENGTH(30),BITORDER(lsb)" };
+type integer INT_BIT31_LSB  (0..2147483647) with { variant "FIELDLENGTH(31),BITORDER(lsb)" };
+type integer INT_BIT32_LSB  (0..4294967295) with { variant "FIELDLENGTH(32),BITORDER(lsb)" };
+
+
+
+
+
+
+type bitstring BIT1_MSB   length(1)   with { variant "FIELDLENGTH(1),BITORDER(msb)" };
+type bitstring BIT2_MSB   length(2)   with { variant "FIELDLENGTH(2),BITORDER(msb)" };
+type bitstring BIT3_MSB   length(3)   with { variant "FIELDLENGTH(3),BITORDER(msb)" };
+type bitstring BIT4_MSB   length(4)   with { variant "FIELDLENGTH(4),BITORDER(msb)" };
+type bitstring BIT5_MSB   length(5)   with { variant "FIELDLENGTH(5),BITORDER(msb)" };
+type bitstring BIT6_MSB   length(6)   with { variant "FIELDLENGTH(6),BITORDER(msb)" };
+type bitstring BIT7_MSB   length(7)   with { variant "FIELDLENGTH(7),BITORDER(msb)" };
+type bitstring BIT8_MSB   length(8)   with { variant "FIELDLENGTH(8),BITORDER(msb)" };
+type bitstring BIT9_MSB   length(9)   with { variant "FIELDLENGTH(9),BITORDER(msb)" };
+type bitstring BIT10_MSB  length(10)  with { variant "FIELDLENGTH(10),BITORDER(msb)" };
+type bitstring BIT11_MSB  length(11)  with { variant "FIELDLENGTH(11),BITORDER(msb)" };
+type bitstring BIT12_MSB  length(12)  with { variant "FIELDLENGTH(12),BITORDER(msb)" };
+type bitstring BIT13_MSB  length(13)  with { variant "FIELDLENGTH(13),BITORDER(msb)" };
+type bitstring BIT14_MSB  length(14)  with { variant "FIELDLENGTH(14),BITORDER(msb)" };
+type bitstring BIT15_MSB  length(15)  with { variant "FIELDLENGTH(15),BITORDER(msb)" };
+type bitstring BIT16_MSB  length(16)  with { variant "FIELDLENGTH(16),BITORDER(msb)" };
+type bitstring BIT17_MSB  length(17)  with { variant "FIELDLENGTH(17),BITORDER(msb)" };
+type bitstring BIT18_MSB  length(18)  with { variant "FIELDLENGTH(18),BITORDER(msb)" };
+type bitstring BIT19_MSB  length(19)  with { variant "FIELDLENGTH(19),BITORDER(msb)" };
+type bitstring BIT20_MSB  length(20)  with { variant "FIELDLENGTH(20),BITORDER(msb)" };
+type bitstring BIT21_MSB  length(21)  with { variant "FIELDLENGTH(21),BITORDER(msb)" };
+type bitstring BIT22_MSB  length(22)  with { variant "FIELDLENGTH(22),BITORDER(msb)" };
+type bitstring BIT24_MSB  length(24)  with { variant "FIELDLENGTH(24),BITORDER(msb)" };
+type bitstring BIT25_MSB  length(25)  with { variant "FIELDLENGTH(25),BITORDER(msb)" };
+type bitstring BIT26_MSB  length(26)  with { variant "FIELDLENGTH(26),BITORDER(msb)" };
+type bitstring BIT27_MSB  length(27)  with { variant "FIELDLENGTH(27),BITORDER(msb)" };
+type bitstring BIT28_MSB  length(28)  with { variant "FIELDLENGTH(28),BITORDER(msb)" };
+type bitstring BIT29_MSB  length(29)  with { variant "FIELDLENGTH(29),BITORDER(msb)" };
+type bitstring BIT30_MSB  length(30)  with { variant "FIELDLENGTH(30),BITORDER(msb)" };
+type bitstring BIT31_MSB  length(31)  with { variant "FIELDLENGTH(31),BITORDER(msb)" };
+type bitstring BIT32_MSB  length(32)  with { variant "FIELDLENGTH(32),BITORDER(msb)" };
+
+
+
+type bitstring BIT1_LSB   length(1)   with { variant "FIELDLENGTH(1),BITORDER(lsb)" };
+type bitstring BIT2_LSB   length(2)   with { variant "FIELDLENGTH(2),BITORDER(lsb)" };
+type bitstring BIT3_LSB   length(3)   with { variant "FIELDLENGTH(3),BITORDER(lsb)" };
+type bitstring BIT4_LSB   length(4)   with { variant "FIELDLENGTH(4),BITORDER(lsb)" };
+type bitstring BIT5_LSB   length(5)   with { variant "FIELDLENGTH(5),BITORDER(lsb)" };
+type bitstring BIT6_LSB   length(6)   with { variant "FIELDLENGTH(6),BITORDER(lsb)" };
+type bitstring BIT7_LSB   length(7)   with { variant "FIELDLENGTH(7),BITORDER(lsb)" };
+type bitstring BIT8_LSB   length(8)   with { variant "FIELDLENGTH(8),BITORDER(lsb)" };
+type bitstring BIT9_LSB   length(9)   with { variant "FIELDLENGTH(9),BITORDER(lsb)" };
+type bitstring BIT10_LSB  length(10)  with { variant "FIELDLENGTH(10),BITORDER(lsb)" };
+type bitstring BIT11_LSB  length(11)  with { variant "FIELDLENGTH(11),BITORDER(lsb)" };
+type bitstring BIT12_LSB  length(12)  with { variant "FIELDLENGTH(12),BITORDER(lsb)" };
+type bitstring BIT13_LSB  length(13)  with { variant "FIELDLENGTH(13),BITORDER(lsb)" };
+type bitstring BIT14_LSB  length(14)  with { variant "FIELDLENGTH(14),BITORDER(lsb)" };
+type bitstring BIT15_LSB  length(15)  with { variant "FIELDLENGTH(15),BITORDER(lsb)" };
+type bitstring BIT16_LSB  length(16)  with { variant "FIELDLENGTH(16),BITORDER(lsb)" };
+type bitstring BIT17_LSB  length(17)  with { variant "FIELDLENGTH(17),BITORDER(lsb)" };
+type bitstring BIT18_LSB  length(18)  with { variant "FIELDLENGTH(18),BITORDER(lsb)" };
+type bitstring BIT19_LSB  length(19)  with { variant "FIELDLENGTH(19),BITORDER(lsb)" };
+type bitstring BIT20_LSB  length(20)  with { variant "FIELDLENGTH(20),BITORDER(lsb)" };
+type bitstring BIT21_LSB  length(21)  with { variant "FIELDLENGTH(21),BITORDER(lsb)" };
+type bitstring BIT22_LSB  length(22)  with { variant "FIELDLENGTH(22),BITORDER(lsb)" };
+type bitstring BIT24_LSB  length(24)  with { variant "FIELDLENGTH(24),BITORDER(lsb)" };
+type bitstring BIT25_LSB  length(25)  with { variant "FIELDLENGTH(25),BITORDER(lsb)" };
+type bitstring BIT26_LSB  length(26)  with { variant "FIELDLENGTH(26),BITORDER(lsb)" };
+type bitstring BIT27_LSB  length(27)  with { variant "FIELDLENGTH(27),BITORDER(lsb)" };
+type bitstring BIT28_LSB  length(28)  with { variant "FIELDLENGTH(28),BITORDER(lsb)" };
+type bitstring BIT29_LSB  length(29)  with { variant "FIELDLENGTH(29),BITORDER(lsb)" };
+type bitstring BIT30_LSB  length(30)  with { variant "FIELDLENGTH(30),BITORDER(lsb)" };
+type bitstring BIT31_LSB  length(31)  with { variant "FIELDLENGTH(31),BITORDER(lsb)" };
+type bitstring BIT32_LSB  length(32)  with { variant "FIELDLENGTH(32),BITORDER(lsb)" };
+
+
+
+type octetstring OCT1_MSB length(1) with { variant "FIELDLENGTH(1),BITORDER(msb)" };
+type octetstring OCT2_MSB length(2) with { variant "FIELDLENGTH(2),BITORDER(msb)" };
+type octetstring OCT3_MSB length(3) with { variant "FIELDLENGTH(3),BITORDER(msb)" };
+type octetstring OCT4_MSB length(4) with { variant "FIELDLENGTH(4),BITORDER(msb)" };
+
+type octetstring OCT1_LSB length(1) with { variant "FIELDLENGTH(1),BITORDER(lsb)" };
+type octetstring OCT2_LSB length(2) with { variant "FIELDLENGTH(2),BITORDER(lsb)" };
+type octetstring OCT3_LSB length(3) with { variant "FIELDLENGTH(3),BITORDER(lsb)" };
+type octetstring OCT4_LSB length(4) with { variant "FIELDLENGTH(4),BITORDER(lsb)" };
+
+  
+} with { encode "RAW" }

@@ -1,0 +1,73 @@
+module CAN_matrix {
+import from General_Types all // for OCT1, OCT2, ..., INT1, ..
+import from Can all // for CAN_id
+import from SocketCAN_Types all  // for SocketCAN_CAN_or_CAN_FD_frame
+import from CAN_matrix_general_types all
+import from My_can_matrix all
+import from My_canfd_matrix all
+
+external function f_encode_can_matrix(in CAN_MatrixUnion pdu) return octetstring 
+with { extension "prototype(convert) encode(RAW)" }
+external function f_decode_can_matrix(in octetstring data) return CAN_MatrixUnion
+with { extension "prototype(convert) decode(RAW)" }
+
+external function f_encode_canfd_matrix(in CANFD_MatrixUnion pdu) return octetstring 
+with { extension "prototype(convert) encode(RAW)" }
+external function f_decode_canfd_matrix(in octetstring data) return CANFD_MatrixUnion
+with { extension "prototype(convert) decode(RAW)" }
+
+
+//---------------------------------------------------------------------------------------
+function canframe2canmatrixframe(CAN_frame p_can_frame) return CAN_MatrixUnion {
+  //--------------------------------------------------------------------------------------- 
+  var CAN_MatrixUnion v_can_frame_can_matrix
+
+  //log("can_id", p_can_frame.can_id)  
+  //log("can_pdu", p_can_frame.can_pdu)
+
+  v_can_frame_can_matrix:=f_decode_can_matrix(p_can_frame.can_id& p_can_frame.can_pdu)
+
+  //log("Higher layer octet pdustring: ", v_can_frame_can_matrix)
+  return v_can_frame_can_matrix
+}
+
+//---------------------------------------------------------------------------------------
+function canmatrixframe2can(in CAN_MatrixUnion p_can_matrix_frame) return CAN_frame {
+  //---------------------------------------------------------------------------------------
+  var CAN_frame v_can_frame
+
+  v_can_frame.can_id := p_can_matrix_frame.can_id
+  var octetstring v_encoded
+  v_encoded := f_encode_can_matrix(p_can_matrix_frame)
+  v_can_frame.can_pdu := substr(v_encoded,4,lengthof(v_encoded)-4)//strip 4 byte can id
+  return v_can_frame
+}
+
+//---------------------------------------------------------------------------------------
+function canfdframe2canfdmatrixframe(CANFD_frame p_canfd_frame) return CANFD_MatrixUnion {
+  //--------------------------------------------------------------------------------------- 
+  var CANFD_MatrixUnion v_canfd_frame_canfd_matrix
+
+  //log("can_id", p_can_frame.can_id)  
+  //log("can_pdu", p_can_frame.can_pdu)
+
+  v_canfd_frame_canfd_matrix:=f_decode_canfd_matrix(p_canfd_frame.can_id& bit2oct(p_canfd_frame.can_flags)& p_canfd_frame.can_pdu)
+
+  //log("Higher layer octet pdustring: ", v_canfd_frame_can_matrix)
+  return v_canfd_frame_canfd_matrix
+}
+
+//---------------------------------------------------------------------------------------
+function canfdmatrixframe2canfd(in CANFD_MatrixUnion p_canfd_matrix_frame) return CANFD_frame {
+  //---------------------------------------------------------------------------------------
+  var CANFD_frame v_canfd_frame
+
+  v_canfd_frame.can_id := p_canfd_matrix_frame.can_id
+  var octetstring v_encoded
+  v_encoded := f_encode_canfd_matrix(p_canfd_matrix_frame)
+  v_canfd_frame.can_pdu := substr(v_encoded,4, 1)//strip 4 byte can id
+  v_canfd_frame.can_pdu := substr(v_encoded,5, lengthof(v_encoded)-5)//strip 4 byte can id, 1 byte  
+  return v_canfd_frame
+}
+
+}with { encode "RAW" }

@@ -12,7 +12,7 @@
 //  File:               SocketCAN_PT.cc
 //  Description:        SocketCAN_PT test port source
 //
-// Revision R1A
+// Revision R2D
 #include "SocketCAN_PT.hh"
 #include "SocketCAN_PortType.hh"
 
