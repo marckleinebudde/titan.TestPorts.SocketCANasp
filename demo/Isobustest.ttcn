@@ -26,7 +26,7 @@ import from Isobus all
 import from IsobusMessageTypes all
 import from Isobus_Templates all
 
-
+ import from IsobusNMMessageTypes all
 
 type union CAN_ID {
   OCT4 can_eff, // 29-bit can address
@@ -576,7 +576,6 @@ testcase tc_encdec() runs on MTC_CT
   log("--------------------------------------------")
   log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939_6))))
   log("--------------------------------------------")
-
 }
 
 testcase tc_encdec_vt2ecu_vtStatusReq() runs on MTC_CT
@@ -618,6 +617,30 @@ testcase tc_encdec_ecu2vt_getMemoryReq_with_template_II() runs on MTC_CT // usin
 {
   template CAN_frame_j1939 t_CAN_frame_j1939 :=  { can_j1939 := { prio := '000000'B, res := '0'B, dp := '0'B, pf := '00'O, ps := '00'O, sa := '00'O }, can_pdu := 
     t_GetMemoryReq_pdu(1234567)}
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+}
+
+testcase tc_encdec_networkMessage_N_SP_Response_pdu_with_template() runs on MTC_CT // using a template
+{
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  t_message ( '000001'B, '1'B, '0'B, '0A'O, '0B'O, '0C'O , 
+  t_N_SP_Response_pdu(port_3, port_4, {'01'O,'02'O,'03'O,'04'O,'05'O,'06'O,'07'O}))
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+}
+
+testcase tc_encdec_networkMessage_N_SP_Response_with_template() runs on MTC_CT // using a template
+{
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  t_network_message ( '000001'B, '1'B, '0'B, '0A'O, '0B'O, '0C'O , 
+  {n_SP_Response := t_N_SP_Response(port_3, port_4, {'01'O,'02'O,'03'O,'04'O,'05'O,'06'O,'07'O})})
+  log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
+  log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
+}
+
+testcase tc_encdec_N_SP_Response_with_template() runs on MTC_CT // using a template
+{
+  template CAN_frame_j1939 t_CAN_frame_j1939 :=  t_message ( '000001'B, '1'B, '0'B, '0A'O, '0B'O, '0C'O , 
+  {networkMessage := {n_SP_Response := t_N_SP_Response(port_3, port_4, {'01'O,'02'O,'03'O,'04'O,'05'O,'06'O,'07'O})}})
   log(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939)))
   log(f_decode_CAN_frame_j1939(f_encode_CAN_frame_j1939(valueof(t_CAN_frame_j1939))))
 }

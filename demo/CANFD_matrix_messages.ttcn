@@ -1,63 +1,62 @@
-module My_canfd_matrix {
+module CANFD_matrix_messages {
 
-import from General_Types all // for OCT1, OCT2, ..., INT1, ..
 import from Can all // for CAN_id
-import from CAN_matrix_general_types all
+import from CAN_matrix_signals all
 
 //The following section is used for the automatic message encding / decoding
 
-type record CANFD_MESSAGE_TESTFRAME0
+type record CANFD_MESSAGE_TESTFRAME0_msg_type
 {
-        BIT11_MSB     test_sig_11_bit_bitstring_lsb_coded,
-        BIT5_MSB      test_sig_5_bit_bitstring_lsb_coded
+        BIT11_signal_type     test_sig_11_bit_bitstring_lsb_coded,
+        BIT5_signal_type      test_sig_5_bit_bitstring_lsb_coded
 
 } with {variant "FIELDORDER(msb)"
          variant (test_sig_11_bit_bitstring_lsb_coded) "BITORDERINFIELD(lsb)" 
          variant (test_sig_5_bit_bitstring_lsb_coded)  "BITORDERINFIELD(lsb)"
 }
 
-type record CANFD_MESSAGE_TESTFRAME1
+type record CANFD_MESSAGE_TESTFRAME1_msg_type
 {
-        BIT11_MSB     test_sig_11_bit_bitstring_msb_coded,
-        BIT5_MSB      test_sig_5_bit_bitstring_msb_coded
+        BIT11_signal_type     test_sig_11_bit_bitstring_msb_coded,
+        BIT5_signal_type      test_sig_5_bit_bitstring_msb_coded
 
 } with {variant "FIELDORDER(msb)"
          variant (test_sig_11_bit_bitstring_msb_coded) "BITORDERINFIELD(msb)" 
          variant (test_sig_5_bit_bitstring_msb_coded)  "BITORDERINFIELD(msb)"
 }
 
-type record CANFD_MESSAGE_TESTFRAME2
+type record CANFD_MESSAGE_TESTFRAME2_msg_type
 {
-        INT_BIT11_MSB  test_sig_11_bit_integer_msb_coded,
-        INT_BIT5_MSB   test_sig_5_bit_integer_msb_coded
+        INT_BIT11_signal_type  test_sig_11_bit_integer_msb_coded,
+        INT_BIT5_signal_type   test_sig_5_bit_integer_msb_coded
 
 } with {variant "FIELDORDER(msb)"
          variant (test_sig_11_bit_integer_msb_coded) "BITORDERINFIELD(msb)" 
          variant (test_sig_5_bit_integer_msb_coded)  "BITORDERINFIELD(msb)"
 }
 
-type record CANFD_MESSAGE_TESTFRAME3
+type record CANFD_MESSAGE_TESTFRAME3_msg_type
 {
-        OCT1 test_sig_1_byte_octetstring_msb_coded,
-        OCT2 test_sig_2_byte_octetstring_msb_coded
+        OCT1_signal_type test_sig_1_byte_octetstring_msb_coded,
+        OCT2_signal_type test_sig_2_byte_octetstring_msb_coded
 
 } with {variant "" }
 
-type record CANFD_MESSAGE_EXTENDEDFRAME1
+type record CANFD_MESSAGE_EXTENDEDFRAME1_msg_type
 {
       //  CAN_id                                     can_id ('80000001'O), 
         // according to SocketCAN Extended frames have the bit 31 set,
-        OCT2 test_sig_2_byte_octetstring_msb_coded
+        OCT2_signal_type test_sig_2_byte_octetstring_msb_coded
 
 } with {variant ""}
 
  type union CANFD_MatrixPayloadUnion
  {
-   CANFD_MESSAGE_TESTFRAME0        message_MyTestframe0,
-   CANFD_MESSAGE_TESTFRAME1        message_MyTestframe1,
-   CANFD_MESSAGE_TESTFRAME2        message_MyTestframe2,
-   CANFD_MESSAGE_TESTFRAME3        message_MyTestframe3,
-   CANFD_MESSAGE_EXTENDEDFRAME1    message_extendedFrame1
+   CANFD_MESSAGE_TESTFRAME0_msg_type        message_MyTestframe0,
+   CANFD_MESSAGE_TESTFRAME1_msg_type        message_MyTestframe1,
+   CANFD_MESSAGE_TESTFRAME2_msg_type        message_MyTestframe2,
+   CANFD_MESSAGE_TESTFRAME3_msg_type        message_MyTestframe3,
+   CANFD_MESSAGE_EXTENDEDFRAME1_msg_type    message_extendedFrame1
  }
   with {variant "" }
  

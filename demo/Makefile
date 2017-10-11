@@ -88,7 +88,8 @@ SocketCAN_BCM_test.ttcn ../src/SocketCAN_PortType.ttcn SocketCAN_RAW_test.ttcn .
 ../src/SocketCAN_Types.ttcn SocketCANtest.ttcn Isobus.ttcn Isobustest.ttcn IsobusMessageTypes.ttcn \
 Isobus_Templates.ttcn IsobusNMMessageTypes.ttcn IsobusCMMessageTypes.ttcn IsobusVTMessageTypes.ttcn \
 Isotp.ttcn Isotptest.ttcn \
-CAN_matrix_general_types.ttcn  CAN_matrix_test.ttcn  CAN_matrix.ttcn My_can_matrix.ttcn My_canfd_matrix.ttcn
+CAN_matrix_general_types.ttcn  CAN_matrix_test.ttcn  CAN_matrix.ttcn CAN_matrix_messages.ttcn CANFD_matrix_messages.ttcn \
+CAN_matrix_signals.ttcn CAN_matrix_templates.ttcn
 
 # ASN.1 modules of this project:
 ASN1_MODULES =
@@ -100,7 +101,8 @@ SocketCAN_BCM_test.cc SocketCAN_PortType.cc SocketCAN_RAW_test.cc SocketCAN_Temp
 SocketCAN_Types.cc SocketCANtest.cc Isobus.cc Isobustest.cc IsobusMessageTypes.cc \
 Isobus_Templates.cc IsobusNMMessageTypes.cc IsobusCMMessageTypes.cc IsobusVTMessageTypes.cc \
 Isotp.cc Isotptest.cc \
-CAN_matrix_general_types.cc  CAN_matrix_test.cc  CAN_matrix.cc My_can_matrix.cc My_canfd_matrix.cc
+CAN_matrix_general_types.cc  CAN_matrix_test.cc  CAN_matrix.cc CAN_matrix_messages.cc CANFD_matrix_messages.cc \
+CAN_matrix_signals.cc CAN_matrix_templates.cc
 
 GENERATED_HEADERS = $(GENERATED_SOURCES:.cc=.hh)
 

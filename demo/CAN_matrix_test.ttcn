@@ -7,9 +7,12 @@ import from CanError all
 import from Can all // for CAN_id
 import from SocketCAN_Types all  // for SocketCAN_CAN_or_CAN_FD_frame
 import from CAN_matrix all
-import from My_can_matrix all
-import from My_canfd_matrix all
+import from CAN_matrix_messages all
+import from CANFD_matrix_messages all
 import from SocketCANtest all
+
+import from CAN_matrix_general_types all
+import from CAN_matrix_templates all
 
 //component declarations
 type component MTC_CT
@@ -29,8 +32,8 @@ testcase tc_encdec() runs on MTC_CT
   
   my_can_message := {can_id := '00000124'O, can_pdu := { message_MyTestframe2 := {
 
-        test_sig_11_bit_integer_msb_coded := 2047, // as this is a integer
-        test_sig_5_bit_integer_msb_coded  := 2    // as this is a integer
+        test_sig_11_bit_integer_big_endian_coded := 2047, // as this is a integer
+        test_sig_5_bit_integer_big_endian_coded  := 2    // as this is a integer
       }}}
   
   log(my_can_message)
@@ -42,8 +45,8 @@ testcase tc_encdec() runs on MTC_CT
     // please note that if it is an extended can address, it would be '0x80000122' as usual in socketCAN
     can_id     := '00000122'O, // '...'O as this is anm octetstring
     can_pdu    := { message_MyTestframe0 := {
-        test_sig_11_bit_bitstring_lsb_coded := '01010101011'B, // '...'B as this is a bitstring
-        test_sig_5_bit_bitstring_lsb_coded  := '11111'B         // '...'B as this is a bitstring
+        test_sig_11_bit_bitstring_little_endian_coded := '01010101011'B, // '...'B as this is a bitstring
+        test_sig_5_bit_bitstring_little_endian_coded  := '11111'B         // '...'B as this is a bitstring
       }
     }
   }  
@@ -58,8 +61,8 @@ testcase tc_encdec() runs on MTC_CT
     // please note that if it is an extended can address, it would be '0x80000123' as usual in socketCAN
     can_id     := '00000123'O, // '...'O as this is anm octetstring
     can_pdu    := { message_MyTestframe1 := {
-        test_sig_11_bit_bitstring_msb_coded := '01010101011'B, // '...'B as this is a bitstring
-        test_sig_5_bit_bitstring_msb_coded  := '11111'B         // '...'B as this is a bitstring
+        test_sig_11_bit_bitstring_big_endian_coded := '01010101011'B, // '...'B as this is a bitstring
+        test_sig_5_bit_bitstring_big_endian_coded  := '11111'B         // '...'B as this is a bitstring
       }
     }
   }  
@@ -75,8 +78,8 @@ testcase tc_encdec() runs on MTC_CT
     can_id     := '00000124'O, // '...'O as this is anm octetstring
     can_pdu    := { message_MyTestframe2 := {
 
-        test_sig_11_bit_integer_msb_coded := 2047, // as this is a integer
-        test_sig_5_bit_integer_msb_coded  := 2    // as this is a integer
+        test_sig_11_bit_integer_big_endian_coded := 2047, // as this is a integer
+        test_sig_5_bit_integer_big_endian_coded  := 2    // as this is a integer
       }
     }
   }
@@ -93,8 +96,8 @@ testcase tc_encdec() runs on MTC_CT
     can_id     := '00000125'O, // '...'O as this is anm octetstring
     can_pdu    := { message_MyTestframe3 := {
 
-        test_sig_1_byte_octetstring_msb_coded := 'FF'O,  // as this is a 1 Byte octetstring
-        test_sig_2_byte_octetstring_msb_coded := '123F'O // as this is a 2 Byte octetstring
+        test_sig_1_byte_octetstring_big_endian_coded := 'FF'O,  // as this is a 1 Byte octetstring
+        test_sig_2_byte_octetstring_big_endian_coded := '123F'O // as this is a 2 Byte octetstring
       }
     }
   }
@@ -121,18 +124,18 @@ testcase tc_encdec() runs on MTC_CT
   log(f_decode_can_matrix(f_encode_can_matrix(valueof(t_message_extendedFrame1_1))))
   log("--------------------------------------------")
 
-  var CAN_MESSAGE_TESTFRAME1      v_message_Frame1_2
-  var CAN_MESSAGE_TESTFRAME2      v_message_Frame2_2
-  var CAN_MESSAGE_TESTFRAME3      v_message_Frame3_2
-  var CAN_MESSAGE_TESTFRAME4      v_message_Frame4_2
-  var CAN_MESSAGE_TESTFRAME5      v_message_Frame5_2
-  var CAN_MESSAGE_EXTENDEDFRAME1  v_message_extendedFrame1_2
+  var CAN_MESSAGE_TESTFRAME1_msg_type      v_message_Frame1_2
+  var CAN_MESSAGE_TESTFRAME2_msg_type      v_message_Frame2_2
+  var CAN_MESSAGE_TESTFRAME3_msg_type      v_message_Frame3_2
+  var CAN_MESSAGE_TESTFRAME4_msg_type      v_message_Frame4_2
+  var CAN_MESSAGE_TESTFRAME5_msg_type      v_message_Frame5_2
+  var CAN_MESSAGE_EXTENDEDFRAME1_msg_type  v_message_extendedFrame1_2
 
   v_message_Frame1_2 := 
   {
     // please note that if it is an extended can address, it would be '0x80000123' as usual in socketCAN
-    test_sig_11_bit_bitstring_msb_coded := '01010101011'B, // '...'B as this is a bitstring
-    test_sig_5_bit_bitstring_msb_coded  := '11111'B         // '...'B as this is a bitstring
+    test_sig_11_bit_bitstring_big_endian_coded := '01010101011'B, // '...'B as this is a bitstring
+    test_sig_5_bit_bitstring_big_endian_coded  := '11111'B         // '...'B as this is a bitstring
   }
 
   template CAN_MatrixUnion t_message_Frame1_2 := {
@@ -149,8 +152,8 @@ testcase tc_encdec() runs on MTC_CT
   v_message_Frame2_2 := 
   {
     // please note that if it is an extended can address, it would be '0x80000124' as usual in socketCAN
-    test_sig_11_bit_integer_msb_coded := 2047, // as this is a integer
-    test_sig_5_bit_integer_msb_coded  := 2    // as this is a integer
+    test_sig_11_bit_integer_big_endian_coded := 2047, // as this is a integer
+    test_sig_5_bit_integer_big_endian_coded  := 2    // as this is a integer
   }
   
   template CAN_MatrixUnion t_message_Frame2_2 := {
@@ -168,8 +171,8 @@ testcase tc_encdec() runs on MTC_CT
   v_message_Frame3_2 := 
   {
     // please note that if it is an extended can address, it would be '0x80000125' as usual in socketCAN
-    test_sig_1_byte_octetstring_msb_coded := 'FF'O,  // as this is a 1 Byte octetstring
-    test_sig_2_byte_octetstring_msb_coded := '123F'O // as this is a 2 Byte octetstring
+    test_sig_1_byte_octetstring_big_endian_coded := 'FF'O,  // as this is a 1 Byte octetstring
+    test_sig_2_byte_octetstring_big_endian_coded := '123F'O // as this is a 2 Byte octetstring
   }
   
   template CAN_MatrixUnion t_message_Frame3_2 := {
@@ -185,8 +188,8 @@ testcase tc_encdec() runs on MTC_CT
 
   v_message_Frame4_2 := 
   {
-    test_unsig_9_bit_2_padded_integer_msb_coded := 511,  // as this is a 9 Bit bitstring
-    test_sig_5_bit_integer_msb_coded := 8 // as this is a 5 bit integer
+    test_unsig_9_bit_2_padded_integer_big_endian_coded := 511,  // as this is a 9 Bit bitstring
+    test_sig_5_bit_integer_big_endian_coded := 8 // as this is a 5 bit integer
   }
 
   template CAN_MatrixUnion t_message_Frame4_2 := {
@@ -202,8 +205,8 @@ testcase tc_encdec() runs on MTC_CT
   
   v_message_Frame5_2 := 
   {
-    test_unsig_9_bit_2_padded_integer_msb_coded := 127,  // as this is a 9 Bit bitstring
-    test_sig_5_bit_integer_msb_coded := 16 // as this is a 5 bit integer
+    test_unsig_9_bit_2_padded_integer_big_endian_coded := 127,  // as this is a 9 Bit bitstring
+    test_sig_5_bit_integer_big_endian_coded := 16 // as this is a 5 bit integer
   }
   
     template CAN_MatrixUnion t_message_Frame5_2 := {
@@ -217,8 +220,15 @@ testcase tc_encdec() runs on MTC_CT
   log(f_decode_can_matrix(f_encode_can_matrix(valueof(t_message_Frame5_2))))
   log("--------------------------------------------")
 
+  log("********************************************")
 
+  log(f_encode_can_matrix(valueof(t_message_Frame5_2_parm(7, 1))))
+  log("--------------------------------------------")
+  log(f_decode_can_matrix(f_encode_can_matrix(valueof(t_message_Frame5_2_parm(7, 1)))))
+  log("--------------------------------------------")
 
+  log("********************************************")
+  
   v_message_extendedFrame1_2 := 
   {
     // please note that if it is an extended can address, it would be '0x80000125' as usual in socketCAN
@@ -272,13 +282,13 @@ testcase tc_can_raw_send_and_receive_can_frame() runs on MTC {
   connect(mtc:pt_sync, v_ptc_rawFrameReceiver:pt_sync)
 
 
-  var CAN_MESSAGE_TESTFRAME1      v_message_Frame1_3
+  var CAN_MESSAGE_TESTFRAME1_msg_type      v_message_Frame1_3
 
   v_message_Frame1_3 := 
   {
     // please note that if it is an extended can address, it would be '0x80000123' as usual in socketCAN
-    test_sig_11_bit_bitstring_msb_coded := '01010101011'B, // '...'B as this is a bitstring
-    test_sig_5_bit_bitstring_msb_coded  := '11111'B         // '...'B as this is a bitstring
+    test_sig_11_bit_bitstring_big_endian_coded := '01010101011'B, // '...'B as this is a bitstring
+    test_sig_5_bit_bitstring_big_endian_coded  := '11111'B         // '...'B as this is a bitstring
   }
 
   template CAN_MatrixUnion t_message_Frame1_3 := {
@@ -328,7 +338,7 @@ testcase tc_can_raw_send_and_receive_canfd_frame() runs on MTC {
       can_pdu := '0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF'O}
   }
 
-  var CANFD_MESSAGE_TESTFRAME1      v_message_Frame1_4
+  var CANFD_MESSAGE_TESTFRAME1_msg_type      v_message_Frame1_4
 
   v_message_Frame1_4 := 
   {

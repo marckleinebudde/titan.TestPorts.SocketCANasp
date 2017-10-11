@@ -269,7 +269,7 @@ type union RequestedParametric
 type record N_GP_Response
 {
   Function                                  msgFunction (129),
-  octetstring                               requestedParametrics [6 .. 255]
+  record length (6..255) of OCT1            requestedParametrics
   // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved ('FF'O) within RequestedParametrics
   // this is the easiest way to handle it
 } with {
@@ -296,12 +296,12 @@ type record N_SP_Request
   // this is the easiest way to handle it
 } with {
   variant "" }
-  
+ 
 type record N_SP_Response
 {
   Function                                  msgFunction (132),
   PortPair                                  portPair, 
-  octetstring                               requestedParametrics [5 .. 255]
+  record length (5..255) of OCT1            requestedParametrics
   // Note: If total length below 8 bytes shall be padded to 8 bytes with reserved ('FF'O) within RequestedParametrics
   // this is the easiest way to handle it
 } with {

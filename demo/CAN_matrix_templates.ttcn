@@ -1,0 +1,31 @@
+module CAN_matrix_templates {
+
+import from CAN_matrix all
+import from CAN_matrix_signals all
+
+import from CAN_matrix_general_types all
+import from CAN_matrix_messages all
+
+
+// for code generation for each defined message
+
+//template CAN_MatrixUnion t_<message_name>(<signal_type_parameter1> <signal_name_parameter1>, 
+//                                          <signal_type_parameter2> <signal_name_parameter2>, 
+//                                          ...
+//                                          <signal_type_parameterN> <signal_name_parameterN>) := {
+//  can_id     := '<CAN-ID of message in HEX with padded 0s>'O, // '...'O as this is an octetstring
+//  can_pdu    :=  { <message name>_frame  :=   {
+//  <signal_type_parameter1> := <signal_name_parameter1>,  
+//  <signal_type_parameter2> := <signal_name_parameter2>
+//  } }
+//  }
+
+  template CAN_MatrixUnion t_message_Frame5_2_parm(integer parameter1, INT_BIT5_signal_type parameter2) := {
+
+    can_id     := '00000127'O, // '...'O as this is an octetstring
+    can_pdu    :=  { message_MyTestframe5 :=   {
+    test_unsig_9_bit_2_padded_integer_big_endian_coded := parameter1,  
+    test_sig_5_bit_integer_big_endian_coded := parameter2
+  } }
+  }
+}

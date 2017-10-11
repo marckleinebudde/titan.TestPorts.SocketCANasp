@@ -1,0 +1,51 @@
+module CAN_matrix_signals {  // header
+
+import from General_Types all // header
+import from CAN_matrix_general_types all  // header
+
+
+// instead of distinguishing between padding and no padding code generation,
+// always tghe padded soulution could be used.
+
+
+// for Bit types without padding
+// type BIT<bitssize>_MSB <signal_name>_signal_type with { variant "BITORDER(msb)" };
+type BIT11_MSB BIT11_signal_type with { variant "BITORDER(msb)" };
+type BIT5_MSB BIT5_signal_type with { variant "BITORDER(msb)" };
+
+// for n-Bit types with k-Bit padding
+//type INT_BIT<n>_MSB <signal_name>_signal_type with 
+//{ variant "ALIGN(right)"
+//  variant "FIELDLENGTH(<(n+k)>)" // 9 (used) +2 (padding) = 11
+//  variant "BITORDER(msb)"
+//};
+type INT_BIT9_MSB BIT_BIT9_PADDED_2_signal_type with 
+{ variant "ALIGN(right)"
+  variant "FIELDLENGTH(11)" // 9 (used) +2 (padding) = 11
+  variant "BITORDER(msb)"
+};
+
+// for integer types without padding
+// type INT_BIT<bitssize>_MSB <signal_name>_signal_type with { variant "BITORDER(msb)" };
+type INT_BIT11_MSB INT_BIT11_signal_type with { variant "BITORDER(msb)" };
+type INT_BIT5_MSB INT_BIT5_signal_type with { variant "BITORDER(msb)" };
+
+// for n-Bit integer types with k-Bit padding
+//type INT_BIT<n>_MSB <signal_name>_signal_type with
+//{ variant "ALIGN(right)"
+//  variant "FIELDLENGTH(<n>+<k>)" // n (used) +k (padding) = 11
+//  variant "BITORDER(msb)"
+//};
+
+type INT_BIT9_MSB INT_BIT9_PADDED_2_signal_type with
+{ variant "ALIGN(right)"
+  variant "FIELDLENGTH(11)" // 9 (used) +2 (padding) = 11
+  variant "BITORDER(msb)"
+};
+
+// for Byte types without padding
+// type OCT<bytesize> <signal_name>_signal_type with { variant "BITORDER(msb)" };
+type OCT1 OCT1_signal_type with { variant "BITORDER(msb)" };
+type OCT2 OCT2_signal_type with { variant "BITORDER(msb)" };
+
+} with { encode "RAW" } //footer

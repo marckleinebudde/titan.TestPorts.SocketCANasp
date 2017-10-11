@@ -3,8 +3,8 @@ import from General_Types all // for OCT1, OCT2, ..., INT1, ..
 import from Can all // for CAN_id
 import from SocketCAN_Types all  // for SocketCAN_CAN_or_CAN_FD_frame
 import from CAN_matrix_general_types all
-import from My_can_matrix all
-import from My_canfd_matrix all
+import from CAN_matrix_messages all
+import from CANFD_matrix_messages all
 
 external function f_encode_can_matrix(in CAN_MatrixUnion pdu) return octetstring 
 with { extension "prototype(convert) encode(RAW)" }

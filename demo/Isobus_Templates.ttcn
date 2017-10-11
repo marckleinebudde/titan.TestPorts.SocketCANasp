@@ -2,9 +2,34 @@ module Isobus_Templates {
 
 import from IsobusMessageTypes all
 import from IsobusVTMessageTypes all
+import from IsobusCMMessageTypes all
+import from IsobusNMMessageTypes all
 import from Isobus all
 import from General_Types all
 
+ template CAN_frame_j1939 t_message(Isobus.Priority prio_param, BIT1 res_param, BIT1 dp_param, 
+ OCT1 pf_param, OCT1 ps_param, SourceAddress sa_param, template AnyIsoBusPdu t_can_pdu) 
+ := { can_j1939 := {
+   prio := prio_param, 
+   res := res_param, 
+   dp  := dp_param,
+   pf  := pf_param,
+   ps  := ps_param,
+   sa  := sa_param},
+   can_pdu := t_can_pdu
+ }
+ 
+  template CAN_frame_j1939 t_network_message(Isobus.Priority prio_param, BIT1 res_param, BIT1 dp_param, 
+ OCT1 pf_param, OCT1 ps_param, SourceAddress sa_param, template IsobusNMMessageTypes.NetworkMessage t_networkMessage) 
+ := { can_j1939 := {
+   prio := prio_param, 
+   res := res_param, 
+   dp  := dp_param,
+   pf  := pf_param,
+   ps  := ps_param,
+   sa  := sa_param},
+   can_pdu := {networkMessage := t_networkMessage}
+ }
 
 template ECU2VT t_GetMemoryReqX( INT3 p_memoryRequired) := {
   getMemoryReq := {
@@ -88,6 +113,21 @@ template WorkingSetMaintenanceReq t_WorkingSetMaintenanceReq(
   reserved7                     := 'FF'O,
   reserved8                     := 'FF'O
 }
+
+template N_SP_Response t_N_SP_Response(template e_PortNumber t_fromPort, 
+                                        template e_PortNumber t_toPort, 
+                                        template N_SP_Response.requestedParametrics requestedParametrics_param) := {  
+   msgFunction := 132,
+   portPair := {fromPort := t_fromPort, toPort := t_toPort},
+   requestedParametrics := requestedParametrics_param
+ }
+
+template AnyIsoBusPdu t_N_SP_Response_pdu(template e_PortNumber t_fromPort, 
+                                        template e_PortNumber t_toPort, 
+                                        template N_SP_Response.requestedParametrics t_requestedParametrics_param) := {  
+   networkMessage := {n_SP_Response := t_N_SP_Response(t_fromPort, t_toPort, t_requestedParametrics_param)
+ }}
+
 
 }
 
