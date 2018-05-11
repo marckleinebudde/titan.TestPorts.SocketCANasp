@@ -15,7 +15,6 @@ https://www.kernel.org/doc/Documentation/networking/can.txt
 Other useful documentation:
 https://docs.python.org/3/library/socket.html (search for: "AF_CAN")
 https://media.readthedocs.org/pdf/python-can/latest/python-can.pdf
-http%3A%2F%2Fwww.can-cia.de%2Ffileadmin%2Fresources%2Fdocuments%2Fproceedings%2F2012_hartkopp.pdf
 http://www.can-cia.de/fileadmin/resources/documents/proceedings/2012_hartkopp.pdf
 http://v2.can-newsletter.org/uploads/media/raw/46c15d02e1fdd3b04e671693ec548ff7.pdf
 
