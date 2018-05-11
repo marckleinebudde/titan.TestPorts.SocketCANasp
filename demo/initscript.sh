@@ -16,15 +16,12 @@ sudo modprobe vcan
 
 # Setup of virtual can vcan0
 sudo ip link add dev vcan0 type vcan
-# set it up at as a canfd can interface
+
+# set it up at as a canfd capable can interface
 sudo ip link set vcan0 mtu 72
 sudo ip link set vcan0 up
 
-# Setup of virtual can vcan1
-sudo ip link add dev vcan1 type vcan
-sudo ip link set vcan1 up
-
-# example configuration of a physical can bus interface
-#sudo ip link set can0 up type can bitrate 1000000
+# or create a physical can interface
+# sudo ip link set can0 up type can bitrate 1000000
 
 ifconfig
