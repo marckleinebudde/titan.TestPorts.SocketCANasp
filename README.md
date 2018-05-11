@@ -19,7 +19,7 @@ http%3A%2F%2Fwww.can-cia.de%2Ffileadmin%2Fresources%2Fdocuments%2Fproceedings%2F
 http://www.can-cia.de/fileadmin/resources/documents/proceedings/2012_hartkopp.pdf
 http://v2.can-newsletter.org/uploads/media/raw/46c15d02e1fdd3b04e671693ec548ff7.pdf
 
-# See file: src/initscript.sh:
+# See file: demo/initscript.sh:
 
 #--------------------------------------
 #!/bin/bash
@@ -29,16 +29,12 @@ sudo modprobe vcan
 
 # Setup of virtual can vcan0
 sudo ip link add dev vcan0 type vcan
-# set it up at as a canfd can interface
+# set it up at as a canfd capable can interface
 sudo ip link set vcan0 mtu 72
 sudo ip link set vcan0 up
 
-# Setup of virtual can vcan1
-sudo ip link add dev vcan1 type vcan
-sudo ip link set vcan1 up
-
-# example configuration of a physical can bus interface
-#sudo ip link set can0 up type can bitrate 1000000
+# or create a physical can interface
+# sudo ip link set can0 up type can bitrate 1000000
 
 ifconfig
 
@@ -53,10 +49,12 @@ source demo/initscript.sh
 make clean; make
 
 ttcn3_start SocketCAN SocketCAN.cfg
+or
+ttcn3_start SocketCAN CAN_matrix_test.cfg
 
 or to run a certain testcase:
 
-ttcn3_start SocketCAN SocketCAN.cfg  SocketCANtest.tc_can_raw1 SocketCANtest.tc_can_bcm1
+ttcn3_start SocketCAN SocketCAN.cfg  SocketCAN_RAW_test.tc_can_raw_send_and_receive_can_frame SocketCAN_RAW_test.tc_can_raw_setsockopt_CAN_RAW_FILTER
 
 Review the newly created log files in the src directory
 and use e.g. Wireshark to trace the CAN interfacce.
@@ -83,8 +81,13 @@ Notes:
 
 -CAN BCM:
  TX_SETUP, TX_DELETE have been tested, TX_READ is known to fail test cases.
- The BCM has test coverage for TX_SETUP and TX_DELETE.
+ Some tests have indicated, that that SocketCAN BCM does not support concurrently
+ active BCM channels.
+ The BCM has test coverage for TX_SETUP and TX_DELETE. However no test coverage
+ that insures the BCM functionality provided by the kernel is working correctly.
+ For this purpose in the future might be added additional test cases.
  Return values other than the error code by the BCM are not yet supported.
+ BCM wth CAN FD frames has not been tested yet.
 
 -ISOTP:
  Iso TP functionality has been added, however currently no options like padding
@@ -102,10 +105,9 @@ Notes:
 
 -Merging of logfiles:
  To merge the logfies from multiple Parallel Test Componets (PTCs) from a
- single run in timely order into sigle file, run in demo directory:
-   $  ./merge.sh
-      the merged and pretty printed log file is found in "demo/log_merged_pretty.txt"
-
+ single run in timely order into sigle file, run:
+   $ TTCN3_DIR/bin/ttcn3_logmerge -o log_merged.txt *.log
+ The merged log-file is found at log_merged.txt
 
 -Dunping CAN Frames using SocketCAN:
  To dump all received can frames of e.g. "vcan0" run a seperate terminal:
