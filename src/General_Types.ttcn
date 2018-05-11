@@ -1,26 +1,23 @@
 /******************************************************************************
-* Copyright (c) 2004, 2016  Ericsson AB
-* All rights reserved. This program and the accompanying materials
-* are made available under the terms of the Eclipse Public License v1.0
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v10.html
-*
-* Contributors:
-*   Zoltan Jasz - initial implementation and initial documentation
-*   Abhishek Gupta
-*   Attila Balasko
-*   Endre Kulcsar
-*   Gabor Bettesch
-*   Gabor Szalai
-*   Janos Kovesdi
-*   Sandor Palugyai
-*   Tibor Csondes
-******************************************************************************/
+ * Copyright (c) 2000-2017 Ericsson Telecom AB
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *   Balasko, Jeno
+ *   Baranyi, Botond
+ *
+ ******************************************************************************/
 //
 //  File:               General_Types.ttcn
-//  Rev:                R8A
+//  Rev:                <RnXnn>
 //  Prodnr:             CNL 113 368
+//  Updated:            2012-11-06
+//  Contact:            http://ttcn.ericsson.se
 //  Reference:
+
 
 module General_Types
 {
@@ -78,11 +75,8 @@ group SimpleNativeTypes {
   type bitstring BIT16 length(16) with { variant "FIELDLENGTH(16)" };
   type bitstring BIT24 length(24) with { variant "FIELDLENGTH(24)" };
   type bitstring BIT31 length(31) with { variant "FIELDLENGTH(31)" };
+  type bitstring BIT32 length(32) with { variant "FIELDLENGTH(32)" };
   type bitstring BIT56 length(56) with { variant "FIELDLENGTH(56)" };
-  
-  type record of bitstring Bitstrings with { variant "" };
-  type Bitstrings BitstringList;
-  type set of bitstring BitstringSet with { variant "" };
 
   //****************************************************
   // Octetstrings
@@ -149,9 +143,6 @@ group SimpleNativeTypes {
   type octetstring OCT3_17n length(3..17) with { variant "" };
   type octetstring OCT4_8n length(4..8) with { variant "" };
 
-  type record of octetstring Octetstrings with { variant "" };
-  type Octetstrings OctetstringList;
-  type set of octetstring OctetstringSet with { variant "" };
 
   //****************************************************
   // Charstrings
@@ -159,10 +150,6 @@ group SimpleNativeTypes {
 
   //charstring with fixed length
   type charstring CHAR4 length (4);
-
-  type record of charstring Charstrings with { variant "" };
-  type Charstrings CharstringList;
-  type set of charstring CharstringSet with { variant "" };
 
   //****************************************************
   // Hexstrings
@@ -177,13 +164,10 @@ group SimpleNativeTypes {
   type hexstring HEX24n length(24) with { variant "" };
 
   //hexstring with length interval
+  type hexstring HEX0_3n length(0..3) with { variant "" };
   type hexstring HEX0_18n length(0..18) with { variant "" };
   type hexstring HEX1_20n length(1..20) with { variant "" };
   type hexstring HEX1_34n length(1..34) with { variant "" };
-
-  type record of hexstring Hexstrings with { variant "" };
-  type Hexstrings HexstringList;
-  type set of hexstring HexstringSet with { variant "" };
 
   //****************************************************
   // Integers
@@ -204,56 +188,6 @@ group SimpleNativeTypes {
   type integer INT13nbp (0..8191) with { variant "" };
   type integer INT15nbp (0..32767) with { variant "" };
 
-  //****************************************************
-  // Structures
-  //****************************************************
-
-  //integer record
-  type record of integer Integers with { variant "" };
-  type Integers IntegerList;
-  type record of Integers Integer_array with { variant "" };
-  type set of integer IntegerSet with { variant "" };
-  
-  //****************************************************
-  // Floats
-  //****************************************************
-  
-  type record of float Floats with { variant "" };
-  type Floats FloatList;
-  type set of float FloatSet with { variant "" };
-
-  //****************************************************
-  // Universal Charstrings
-  //****************************************************
-  
-  type record of universal charstring UniversalCharstrings with { variant "" };
-  type UniversalCharstrings UniversalCharstringList;
-  type set of universal charstring UniversalCharstringSet with { variant "" };
-  
-  //****************************************************
-  // Booleans
-  //****************************************************
-  
-  type record of boolean Booleans with { variant "" };
-  type Booleans BooleanList;
-  type set of boolean BooleanSet with { variant "" };
-  
-  //****************************************************
-  // Verdicttypes
-  //****************************************************
-  
-  type record of verdicttype Verdicttypes with { variant "" };
-  type Verdicttypes VerdicttypeList;
-  type set of verdicttype VerdicttypeSet with { variant "" };
-  
-  //****************************************************
-  // Anytypes
-  //****************************************************
-  
-  type record of anytype Anytypes with { variant "" };
-  type Anytypes AnytypeList;
-  type set of anytype AnytypeSet with { variant "" };
-  
 } // end group NativeTypes
 
 //****************************************************
@@ -350,8 +284,17 @@ group SimpleRAWEncodedTypes {
   type integer INT12b_BO_LAST ( 0 .. 4095 ) with { variant "FIELDLENGTH(12), COMP(nosign), BYTEORDER(last)" };
   type integer INT13b_BO_LAST ( 0 .. 8191 ) with { variant "FIELDLENGTH(13), COMP(nosign), BYTEORDER(last)" };
   type integer INT14b_BO_LAST ( 0 .. 16383 ) with { variant "FIELDLENGTH(14), COMP(nosign), BYTEORDER(last)" };
+  type integer INT18b_BO_LAST ( 0 .. 262143 ) with { variant "FIELDLENGTH(18), COMP(nosign), BYTEORDER(last)" };
   type integer INT20b_BO_LAST ( 0 .. 1048575 ) with { variant "FIELDLENGTH(20), COMP(nosign), BYTEORDER(last)" };
   type integer INT31b_BO_LAST ( 0 .. 2147483647 ) with { variant "FIELDLENGTH(31), COMP(nosign), BYTEORDER(last)" };
+
+  //****************************************************
+  // Structures
+  //****************************************************
+
+  //integer record
+  type record of integer Integers with { variant "" };
+  type record of Integers Integer_array with { variant "" };
 
 } // end group SimpleRAWEncodedTypes
 
@@ -372,8 +315,8 @@ group CompositeTypes {
   type record of OCT6           OCT6List with { variant "" };
   type record of OCT7           OCT7List with { variant "" };
 
-  type record of Dummy_comptype ListOfDummy_comptype with { variant "" };
-  type record of Dummy_CT       ListOfDummy_CT with { variant "" };
+  type record of Dummy_comptype ListOfDummy_comptype;
+  type record of Dummy_CT       ListOfDummy_CT;
   type record of Protocols      ProtocolList with { variant "" };
 } // end group CompositeTypes
 
