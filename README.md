@@ -15,7 +15,7 @@ https://www.kernel.org/doc/Documentation/networking/can.txt
 * https://docs.python.org/3/library/socket.html (search for: "AF_CAN")
 * https://media.readthedocs.org/pdf/python-can/latest/python-can.pdf
 * http://www.can-cia.de/fileadmin/resources/documents/proceedings/2012_hartkopp.pdf
-* http://v2.can-newsletter.org/uploads/media/raw/46c15d02e1fdd3b04e671693ec548ff7.pdf
+* http://www.can-newsletter.org/uploads/media/raw/46c15d02e1fdd3b04e671693ec548ff7.pdf
 
 ## Start `vcan0` interface
 
