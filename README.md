@@ -44,7 +44,8 @@ ifconfig
 
 ```
 cd demo
-make clean
+./gen_links.sh
+./regen_makefile.sh
 make
 ```
 
