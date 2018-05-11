@@ -138,7 +138,7 @@ function f_incPTCPhase(in e_Phase p_currentPhase) runs on PTC return e_Phase {
 }
 
 function f_sendPhaseEndInd() runs on PTC{
-  // just to allow matching with integer ranges on the reception side, as it is not poosible to do so with enums
+  // just to allow matching with integer ranges on the reception side, as it is not posible to do so with enums
   var PhaseEndInd v_PhaseEndInd := {phase := v_phase, phase_int := enum2int(v_phase)}
   pt_sync.send(v_PhaseEndInd)
   log("PTC: PhaseEndInd to MTC with content: ", v_PhaseEndInd, self)

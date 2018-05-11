@@ -5,7 +5,7 @@ import from CAN_matrix_general_types all  // header
 
 
 // instead of distinguishing between padding and no padding code generation,
-// always tghe padded soulution could be used.
+// always the padded soulution could be used.
 
 
 // for Bit types without padding
