@@ -1,3 +1,5 @@
+#!/bin/bash
+
  ##############################################################################
  # Copyright (c) 2010, 2016  Ericsson AB
  # All rights reserved. This program and the accompanying materials
@@ -9,9 +11,6 @@
  # Michael Josenhans
  ##############################################################################
 
-
-#!/bin/bash
 #rm log_merged.txt
 MERGED_LOG_FILE="log_merged.txt"
 $TTCN3_DIR/bin/ttcn3_logmerge -o $MERGED_LOG_FILE *.log
-

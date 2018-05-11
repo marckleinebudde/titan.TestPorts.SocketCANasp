@@ -1,3 +1,5 @@
+#!/bin/bash
+
  ##############################################################################
  # Copyright (c) 2010, 2016  Ericsson AB
  # All rights reserved. This program and the accompanying materials
@@ -8,10 +10,6 @@
  # Contributors:
  # Michael Josenhans
  ##############################################################################
-
-
-
-#!/bin/bash
 
 # Add vcan module to kernel
 sudo modprobe vcan
