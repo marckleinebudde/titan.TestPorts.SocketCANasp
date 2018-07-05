@@ -2,7 +2,7 @@
 # of the TTCN-3 Test executor version CRL 113 200/5 R5A
 # for  (michael@michael-desktop) on Sun Sep 18 22:14:13 CEST 2016
 
-# Copyright (c) 2000-2016 Ericsson Telecom AB
+# Copyright (c) 2000-2018 Ericsson Telecom AB
 
 # The following make commands are available:
 # - make, make all      Builds the executable test suite.
