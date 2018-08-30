@@ -11,7 +11,7 @@
 //
 //  File:               SocketCAN_PT.hh
 //  Description:        SocketCAN test port header
-// 
+//
 // Revision R2D
 
 #ifndef SocketCAN__PT_HH
@@ -63,7 +63,7 @@ protected:
 	void outgoing_send(const SocketCAN__Types::SocketCAN__send__data& send_par);
 	void outgoing_send(
 			const SocketCAN__Types::SocketCAN__write__data& send_par);
-      	void outgoing_send(const SocketCAN__Types::SocketCAN__write__isotp& send_par);
+	void outgoing_send(const SocketCAN__Types::SocketCAN__write__isotp& send_par);
 	void outgoing_send(const SocketCAN__Types::SocketCAN__setsockopt& send_par);
 	void outgoing_send(const SocketCAN__Types::SocketCAN__close& send_par);
 	virtual void incoming_message(
@@ -78,18 +78,18 @@ protected:
 			const SocketCAN__Types::SocketCAN__send__data__result& incoming_par) = 0;
 	virtual void incoming_message(
 			const SocketCAN__Types::SocketCAN__write__data__result& incoming_par) = 0;
-        virtual void incoming_message(
-                        const SocketCAN__Types::SocketCAN__write__isotp__result& incoming_par) = 0;
+	virtual void incoming_message(
+			const SocketCAN__Types::SocketCAN__write__isotp__result& incoming_par) = 0;
 	virtual void incoming_message(
 			const SocketCAN__Types::SocketCAN__receive__CAN__or__CAN__FD__frame& incoming_par) = 0;
 	virtual void incoming_message(
 			const SocketCAN__Types::SocketCAN__receive__BCM__message& incoming_par) = 0;
-        virtual void incoming_message(
-                        const SocketCAN__Types::SocketCAN__receive__isotp__pdu& incoming_par) = 0;
+	virtual void incoming_message(
+			const SocketCAN__Types::SocketCAN__receive__isotp__pdu& incoming_par) = 0;
 	virtual void incoming_message(
 			const SocketCAN__Types::SocketCAN__setsockopt__result& incoming_par) = 0;
-        void set_asp_params();
-        void reset_configuration();
+	void set_asp_params();
+	void reset_configuration();
 	void InitStrPar(char *&par, const char *name, const char *val);
 	void log(const char *fmt, ...);
 	void logOctet(const char *prompt, const OCTETSTRING& msg);

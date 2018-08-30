@@ -79,7 +79,7 @@ struct canfd_frame;
 #endif  //CANFD_MTU
 
 // make sure CAN_FD_FRAME is defined, as not defined in some older kernel versions
-// and thus canfd frames can not be used for data transfer between 
+// and thus canfd frames can not be used for data transfer between
 // kernel module and userspace
 #ifndef CAN_FD_FRAME
 #define CAN_FD_FRAME   0x0800
@@ -1754,4 +1754,3 @@ void SocketCAN__PT_PROVIDER::closeDownSocket() {
 
 }
 /* end of namespace */
-

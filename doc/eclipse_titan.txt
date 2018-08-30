@@ -1,7 +1,7 @@
 Converting a Titan Project to include Eclipse C/C++
 
-File -> New -> Other 
--> C/C++ 
+File -> New -> Other
+-> C/C++
 -> Convert to a C/C++ project (Add C/C++ nature)
 
 Project -> Properties
